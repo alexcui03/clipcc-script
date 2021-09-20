@@ -1,8 +1,8 @@
 import Block from "./block";
 
-enum ParamType { FIELD, INPUT }
+enum ParamType { FIELD, INPUT, STATEMENT }
 enum BlockType { HEAD, END, BODY, CALLABLE, STATEMENT }
-enum ValueType { FIELD, NUMBER, STRING, ANY }
+enum ValueType { FIELD, NUMBER, STRING, ANY, STATEMENT }
 
 interface BlockParamPrototype {
     name: string;

@@ -34,6 +34,11 @@
   resolved "https://r.cnpmjs.org/@tsconfig/node16/download/@tsconfig/node16-1.0.2.tgz#423c77877d0569db20e1fc80885ac4118314010e"
   integrity sha1-Qjx3h30Fadsg4fyAiFrEEYMUAQ4=
 
+"@types/node@^16.9.4":
+  version "16.9.4"
+  resolved "https://r.cnpmjs.org/@types/node/download/@types/node-16.9.4.tgz#a12f0ee7847cf17a97f6fdf1093cb7a9af23cca4"
+  integrity sha1-oS8O54R88XqX9v3xCTy3qa8jzKQ=
+
 acorn-walk@^8.1.1:
   version "8.2.0"
   resolved "https://r.cnpmjs.org/acorn-walk/download/acorn-walk-8.2.0.tgz#741210f2e2426454508853a2f44d0ab83b7f69c1"

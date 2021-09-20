@@ -9,6 +9,39 @@ const blockPrototypes = new Map<string, BlockPrototype>([
         params: []
     }],
 
+    // Control
+    ['control_if_else', {
+        opcode: 'control_if_else',
+        type: BlockType.STATEMENT,
+        params: [
+            { name: 'CONDITION', type: ParamType.INPUT, valueType: ValueType.ANY },
+            { name: 'SUBSTACK', type: ParamType.STATEMENT, valueType: ValueType.STATEMENT },
+            { name: 'SUBSTACK2', type: ParamType.STATEMENT, valueType: ValueType.STATEMENT }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return [
+                `if (${params.get('CONDITION')}) {`,
+                params.get('SUBSTACK'),
+                '}', 'else {',
+                params.get('SUBSTACK2'),
+                '}'
+            ].join('\n');
+        }
+    }],
+    ['control_forever', {
+        opcode: 'control_forever',
+        type: BlockType.STATEMENT,
+        params: [
+            { name: 'SUBSTACK', type: ParamType.STATEMENT, valueType: ValueType.STATEMENT }
+        ],
+        toCode: (params: Map<string, string>): string => {return [
+            `while (true) {`,
+            params.get('SUBSTACK'),
+            '}'
+        ].join('\n');
+        }
+    }],
+
     // Operator
     ['operator_add', {
         opcode: 'operator_add',

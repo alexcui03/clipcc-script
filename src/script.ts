@@ -1,11 +1,7 @@
 import XML from 'fast-xml-parser';
 import Block, { BlockField, BlockInput, BlockShadow } from './block';
 import BlockSet from './blockset';
-
-function loadArray(obj: any) {
-    if (obj === undefined || obj === null) return [];
-    return Array.isArray(obj) ? obj : [obj];
-}
+import { loadArray } from './util';
 
 class Script {
     private blockSets: BlockSet[] = [];
@@ -84,10 +80,7 @@ class Script {
             const blockSet = new BlockSet();
 
             const topBlock = new Block();
-            topBlock.opcode = block['@_type'];
-            topBlock.id = block['@_id'];
-            topBlock.x = block['@_x'] || 0;
-            topBlock.y = block['@_y'] || 0;
+            topBlock.loadFromXML(block);
             if (topBlock.opcode === 'event_whenflagclicked') {
                 blockSet.topBlock = topBlock;
             }

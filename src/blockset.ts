@@ -10,7 +10,7 @@ class BlockSet {
 
     public generateCodeWithName(name: string): string {
         const code: string[] = [];
-        code.push(`${name}(${this.topBlock.generateParams()}) {`);
+        code.push(`${name}() {`);
 
         for (const block of this.bodyBlocks) {
             code.push(block.generateCode());

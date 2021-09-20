@@ -5,9 +5,11 @@ import Block, { BlockField, BlockInput, BlockShadow } from './block';
 import BlockSet from './block_set';
 import DefinitionManager from './definition_manager';
 import { loadArray } from './util';
+import Variable from './variable';
 
 class Script {
     private blockSets: BlockSet[] = [];
+    private variables: Variable[] = [];
     private code: string[] = [];
     private usedMemberName: Set<string>;
     private cntMemberPrefix: Map<string, number>;
@@ -38,10 +40,17 @@ class Script {
         this.clear();
 
         // load variables
-        // @todo: load var
+        if (xml.xml.variables && xml.xml.variables.variable) {
+            const variables = loadArray(xml.xml.variables.variable);
+            for (const varXML of variables) {
+                const variable = new Variable();
+                variable.loadFromXML(varXML);
+                this.variables.push(variable);
+            }
+        }
 
         // load blocks
-        let blocks = loadArray(xml.xml.block);
+        const blocks = loadArray(xml.xml.block);
         for (let blockXML of blocks) {
             const blockSet = new BlockSet();
 
@@ -107,7 +116,14 @@ class Script {
             block: []
         };
 
-        // @todo: export variables
+        if (this.variables.length) {
+            xml.variables = {
+                variable: []
+            };
+            for (const variable of this.variables) {
+                xml.variables.variable.push(variable.exportXML());
+            }
+        }
 
         for (const blockSet of this.blockSets) {
             xml.block.push(blockSet.exportXML());

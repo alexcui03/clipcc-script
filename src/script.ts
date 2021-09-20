@@ -1,6 +1,7 @@
 import XML from 'fast-xml-parser';
 import Block, { BlockField, BlockInput, BlockShadow } from './block';
-import BlockSet from './blockset';
+import BlockSet from './block_set';
+import DefinitionManager from './definition_manager';
 import { loadArray } from './util';
 
 class Script {
@@ -118,12 +119,12 @@ class Script {
         return name;
     }
 
-    public generateCode(): string {
+    public generateCode(definition: DefinitionManager): string {
         this.clearCode();
 
         for (const blockSet of this.blockSets) {
             const memberName = this.generateMemberName(blockSet.topBlock.opcode);
-            this.code.push(blockSet.generateCodeWithName(memberName));
+            this.code.push(blockSet.generateCodeWithName(memberName, definition));
         }
 
         return this.code.join('\n');

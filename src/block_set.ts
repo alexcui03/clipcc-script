@@ -1,4 +1,5 @@
 import Block from "./block";
+import DefinitionManager from "./definition_manager";
 
 class BlockSet {
     public topBlock: Block;
@@ -8,12 +9,12 @@ class BlockSet {
         this.bodyBlocks.push(block);
     }
 
-    public generateCodeWithName(name: string): string {
+    public generateCodeWithName(name: string, definition: DefinitionManager): string {
         const code: string[] = [];
         code.push(`${name}() {`);
 
         for (const block of this.bodyBlocks) {
-            code.push(block.generateCode());
+            code.push(block.generateCode(definition));
         }
 
         code.push('}');

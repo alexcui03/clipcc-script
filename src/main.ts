@@ -1,5 +1,11 @@
+import DefinitionManager from './definition_manager';
 import Script from './script';
 
-export default {
+class ClipCCScript {
+    private definition = new DefinitionManager();
+}
+
+export default ClipCCScript;
+export {
     Script
-};
+}

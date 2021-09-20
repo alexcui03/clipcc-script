@@ -1,3 +1,4 @@
+import DefinitionManager from "./definition_manager";
 import { loadArray } from "./util";
 
 class Block {
@@ -45,30 +46,37 @@ class Block {
         }
     }
 
-    public generateCode() {
-        return `${this.opcode}(${this.generateParams()})`;
-    }
+    public generateCode(definition: DefinitionManager) {
+        if (definition.get(this.opcode) && definition.get(this.opcode).toCode) {
+            const params = new Map<string, string>();
 
-    public generateParams() {
-        const params: string[] = [];
+            for (const [name, field] of this.fields) {
+                params.set(name, String(field.value));
+            }
 
-        for (const [name, field] of this.fields) {
-            params.push(String(field.value));
+            for (const [name, input] of this.inputs) {
+                if (input.block) params.set(name, input.block.generateCode(definition));
+                else if (input.shadow) params.set(name, String(input.shadow.value));
+                else params.set(name, 'null');
+            }
+
+            return definition.get(this.opcode).toCode(params);
         }
+        else {
+            const params: string[] = [];
 
-        for (const [name, input] of this.inputs) {
-            if (input.block) {
-                params.push(input.block.generateCode());
+            for (const [name, field] of this.fields) {
+                params.push(String(field.value));
             }
-            else if (input.shadow) {
-                params.push(String(input.shadow.value));
+
+            for (const [name, input] of this.inputs) {
+                if (input.block) params.push(input.block.generateCode(definition));
+                else if (input.shadow) params.push(String(input.shadow.value));
+                else params.push('null');
             }
-            else {
-                params.push('null');
-            }
+
+            return `${this.opcode}(${[...params.values()].join(', ')})`;
         }
-
-        return params.join(', ');
     }
 }
 

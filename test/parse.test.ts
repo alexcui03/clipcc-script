@@ -1,4 +1,4 @@
-import Script from "../src/script";
+import Script from '../src/script';
 
 const xml: string = `<xml xmlns="http://www.w3.org/1999/xhtml">
 <variables>
@@ -40,3 +40,4 @@ const xml: string = `<xml xmlns="http://www.w3.org/1999/xhtml">
 
 const script = new Script();
 script.loadFromXML(xml);
+console.log(script.generateCode());

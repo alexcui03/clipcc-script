@@ -30,43 +30,6 @@ class Script {
         return this.blockSets.length;
     }
 
-    private parseBlockFromXML(xml: any): Block {
-        const block = new Block();
-
-        block.opcode = xml['@_type'];
-        block.id = xml['@_id'];
-
-        // parse fields
-        const fields = loadArray(xml.field);
-        for (const fieldXML of fields) {
-            const field = new BlockField();
-            field.id = fieldXML['@_id'];
-            field.value = fieldXML['#text'];
-            block.fields.set(fieldXML['@_name'], field);
-        }
-
-        // parse inputs
-        const inputs = loadArray(xml.value);
-        for (const inputXML of inputs) {
-            const input = new BlockInput();
-
-            if (inputXML.shadow) {
-                input.shadow = new BlockShadow();
-                input.shadow.id = inputXML.shadow['@_id'];
-                input.shadow.type = inputXML.shadow['@_type'];
-                input.shadow.value = inputXML.shadow.field['#text'];
-            }
-
-            if (inputXML.block) {
-                input.block = this.parseBlockFromXML(inputXML.block);
-            }
-
-            block.inputs.set(inputXML['@_name'], input);
-        }
-
-        return block;
-    }
-
     public loadFromXML(xmlString: string): void {
         const xml = XML.parse(xmlString, { ignoreAttributes: false });
 
@@ -77,11 +40,11 @@ class Script {
 
         // load blocks
         let blocks = loadArray(xml.xml.block);
-        for (let block of blocks) {
+        for (let blockXML of blocks) {
             const blockSet = new BlockSet();
 
             const topBlock = new Block();
-            topBlock.loadFromXML(block);
+            topBlock.loadFromXML(blockXML);
             if (topBlock.opcode === 'event_whenflagclicked') {
                 blockSet.topBlock = topBlock;
             }
@@ -92,9 +55,11 @@ class Script {
                 blockSet.push(topBlock);
             }
 
-            while (block.next) {
-                block = block.next.block;
-                blockSet.push(this.parseBlockFromXML(block));
+            while (blockXML.next) {
+                blockXML = blockXML.next.block;
+                const block = new Block();
+                block.loadFromXML(blockXML);
+                blockSet.push(block);
             }
 
             this.blockSets.push(blockSet);

@@ -20,6 +20,15 @@ class BlockSet {
         code.push('}');
         return code.join('\n');
     }
+
+    public exportXML(): any {
+        if (this.topBlock.isTop) {
+            return this.topBlock.exportXML();
+        }
+        else {
+            return this.bodyBlocks[0].exportXML();
+        }
+    }
 }
 
 export default BlockSet;

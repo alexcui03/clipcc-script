@@ -139,7 +139,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
         ],
         toCode: (params: Map<string, string>): string => {
             return [
-                `for (${params.get('VARIABLE')} = 0; ${params.get('VARIABLE')} < ${params.get('VALUE')}; ++${params.get('VARIABLE')}) {`,
+                `for (this.var.${params.get('VARIABLE')} = 0; ${params.get('VARIABLE')} < ${params.get('VALUE')}; ++${params.get('VARIABLE')}) {`,
                 params.get('SUBSTACK'),
                 '}'
             ].join('\n');
@@ -197,7 +197,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'VARIABLE', type: ParamType.FIELD, valueType: ValueType.FIELD }
         ],
         toCode: (params: Map<string, string>): string => {
-            return params.get('VARIABLE');
+            return `this.var.params.get('VARIABLE')`;
         }
     }],
     ['data_setvariableto', {
@@ -208,7 +208,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'VALUE', type: ParamType.INPUT, valueType: ValueType.ANY }
         ],
         toCode: (params: Map<string, string>): string => {
-            return `${params.get('VARIABLE')} = ${params.get('VALUE')};`;
+            return `this.var.${params.get('VARIABLE')} = ${params.get('VALUE')};`;
         }
     }],
     ['data_changevariableby', {
@@ -219,7 +219,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'VALUE', type: ParamType.INPUT, valueType: ValueType.ANY }
         ],
         toCode: (params: Map<string, string>): string => {
-            return `${params.get('VARIABLE')} += ${params.get('VALUE')};`;
+            return `this.var.${params.get('VARIABLE')} += ${params.get('VALUE')};`;
         }
     }]
 ]);

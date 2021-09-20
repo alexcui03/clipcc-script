@@ -5,6 +5,7 @@ class BlockShadow {
     public type: string = '';
     public id: string = '';
     public value: any = null;
+    public fieldName: string = '';
 }
 
 class BlockInput {
@@ -29,10 +30,11 @@ class Block {
     public id: string = '';
     public x: number = 0;
     public y: number = 0;
-    public line: number = 0;
     public fields = new Map<string, BlockField>();
     public inputs = new Map<string, BlockInput>();
     public statements = new Map<string, BlockStatement>();
+    public isTop: boolean = false;
+    public next: Block = null;
 
     public loadFromXML(xml: any) {
         this.opcode = xml['@_type'];
@@ -59,6 +61,7 @@ class Block {
                 input.shadow.id = inputXML.shadow['@_id'];
                 input.shadow.type = inputXML.shadow['@_type'];
                 input.shadow.value = inputXML.shadow.field['#text'];
+                input.shadow.fieldName = inputXML.shadow.field['@_name'];
             }
 
             if (inputXML.block) {
@@ -86,6 +89,63 @@ class Block {
 
             this.statements.set(statementXML['@_name'], statement);
         }
+    }
+
+    public exportXML(): any {
+        const xml: any = {
+            '@_type': this.opcode,
+            '@_id': this.id,
+            field: [],
+            value: [],
+            statement: []
+        };
+
+        for (const [name, field] of this.fields) {
+            xml.field.push({
+                '@_name': name,
+                '@_id': field.id,
+                '#text': field.value
+            });
+        }
+
+        for (const [name, input] of this.inputs) {
+            const temp: any = {
+                '@_name': name
+            };
+
+            if (input.shadow) {
+                temp.shadow = {
+                    '@_type': input.shadow.type,
+                    '@_id': input.shadow.id,
+                    field: {
+                        '@_name': input.shadow.fieldName,
+                        '#text': input.shadow.value
+                    }
+                };
+            }
+
+            if (input.block) {
+                temp.block = input.block.exportXML();
+            }
+            
+            xml.value.push(temp);
+        }
+        
+        for (const [name, statement] of this.statements) {
+            const temp: any = {
+                '@_name': name
+            }
+            if (statement.blocks.length) {
+                temp.block = statement.blocks[0].exportXML();
+            }
+            xml.statement.push(temp);
+        }
+
+        if (this.next) {
+            xml.next = this.next.exportXML();
+        }
+
+        return xml;
     }
 
     public generateCode(definition: DefinitionManager, needSemicolon: boolean = false) {

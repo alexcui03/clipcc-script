@@ -1,4 +1,6 @@
 import XML from 'fast-xml-parser';
+import acorn = require('acorn');
+
 import Block, { BlockField, BlockInput, BlockShadow } from './block';
 import BlockSet from './block_set';
 import DefinitionManager from './definition_manager';
@@ -45,6 +47,7 @@ class Script {
 
             const topBlock = new Block();
             topBlock.loadFromXML(blockXML);
+            topBlock.isTop = true;
             if (topBlock.opcode === 'event_whenflagclicked') {
                 blockSet.topBlock = topBlock;
             }
@@ -55,10 +58,13 @@ class Script {
                 blockSet.push(topBlock);
             }
 
+            let last: Block = blockSet.topBlock;
             while (blockXML.next) {
                 blockXML = blockXML.next.block;
                 const block = new Block();
                 block.loadFromXML(blockXML);
+                if (last) last.next = block;
+                last = block;
                 blockSet.push(block);
             }
 
@@ -93,6 +99,27 @@ class Script {
         }
 
         return this.code.join('\n');
+    }
+
+    public exportXML(): string {
+        const xml: any = {
+            '@_xmlns': 'http://www.w3.org/1999/xhtml',
+            block: []
+        };
+
+        // @todo: export variables
+
+        for (const blockSet of this.blockSets) {
+            xml.block.push(blockSet.exportXML());
+        }
+
+        const parser = new XML.j2xParser({ ignoreAttributes: false });
+        
+        return parser.parse({ xml: xml });
+    }
+
+    public loadFromCode(code: string): void {
+        this.clear();
     }
 }
 

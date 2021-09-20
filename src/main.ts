@@ -8,4 +8,4 @@ class ClipCCScript {
 export default ClipCCScript;
 export {
     Script
-}
+};

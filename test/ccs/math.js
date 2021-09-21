@@ -1,7 +1,7 @@
 import Stage from 'clipcc-script/stage';
 
 class TestStage extends Stage {
-    constructor() {
+    unnamed() {
         this.x = 0;
         this.y = 0;
     }

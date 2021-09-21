@@ -142,7 +142,9 @@ class Block {
         }
 
         if (this.next) {
-            xml.next = this.next.exportXML();
+            xml.next = {
+                block: this.next.exportXML()
+            };
         }
 
         return xml;

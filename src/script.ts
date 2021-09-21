@@ -1,5 +1,5 @@
 import XML from 'fast-xml-parser';
-import Block, { BlockField, BlockInput, BlockShadow } from './block';
+import Block from './block';
 import { BlockType } from './block_prototype';
 import BlockSet from './block_set';
 import DefinitionManager from './definition_manager';
@@ -58,7 +58,7 @@ class Script {
             const topBlock = new Block();
             topBlock.loadFromXML(blockXML);
             topBlock.isTop = true;
-            if (this.definition.get(topBlock.opcode).type === BlockType.HEAD) {
+            if (this.definition.getBlock(topBlock.opcode).type === BlockType.HEAD) {
                 blockSet.topBlock = topBlock;
             }
             else {
@@ -85,7 +85,7 @@ class Script {
     private generateMemberName(opcode: string): string {
         let name = 'anonymousBlockSet';
 
-        const def = this.definition.get(opcode);
+        const def = this.definition.getBlock(opcode);
         if (def.type === BlockType.HEAD) {
             name = def.memberName;
         }

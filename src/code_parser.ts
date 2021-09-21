@@ -152,6 +152,12 @@ class CodeParser {
                     }
                     else if (left.object.type === 'MemberExpression') {
                         // this.xxx.xxx = xxx;
+                        if (left.object.object.type === 'ThisExpression') [
+
+                        ]
+                        else {
+
+                        }
                     }
                 }
             }
@@ -160,8 +166,15 @@ class CodeParser {
             }
         }
     }
+    
+    private parseSetPropertyExpression(property: string, right: estree.Expression): Block {
+        const block = new Block();
+        return block;
+    }
 
-    private parseExpressionOrLiteralToInput(node: estree.Expression, shadow?: boolean, shadowType?: string, fieldName?: string): BlockInput {
+    private parseExpressionOrLiteralToInput(
+        node: estree.Expression, shadow?: boolean, shadowType?: string, fieldName?: string
+    ): BlockInput {
         const input = new BlockInput();
         if (node.type === 'Literal' && shadow) {
             input.shadow = new BlockShadow();

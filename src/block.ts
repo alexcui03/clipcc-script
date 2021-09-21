@@ -151,7 +151,7 @@ class Block {
     }
 
     public generateCode(definition: DefinitionManager, needSemicolon: boolean = false) {
-        if (definition.get(this.opcode) && definition.get(this.opcode).toCode) {
+        if (definition.getBlock(this.opcode) && definition.getBlock(this.opcode).toCode) {
             const params = new Map<string, string>();
 
             for (const [name, field] of this.fields) {
@@ -168,7 +168,7 @@ class Block {
                 params.set(name, statement.blocks.map(block => block.generateCode(definition, true)).join('\n'));
             }
 
-            return definition.get(this.opcode).toCode(params);
+            return definition.getBlock(this.opcode).toCode(params);
         }
         else {
             const params: string[] = [];

@@ -1,5 +1,6 @@
 import XML from 'fast-xml-parser';
 import Block, { BlockField, BlockInput, BlockShadow } from './block';
+import { BlockType } from './block_prototype';
 import BlockSet from './block_set';
 import DefinitionManager from './definition_manager';
 import { loadArray } from './util';
@@ -8,13 +9,15 @@ import Variable from './variable';
 class Script {
     public blockSets: BlockSet[] = [];
     public variables: Variable[] = [];
-    public code: string[] = [];
-    public usedMemberName: Set<string>;
-    public cntMemberPrefix: Map<string, number>;
+    private code: string[] = [];
+    private usedMemberName: Set<string>;
+    private cntMemberPrefix: Map<string, number>;
+    private definition: DefinitionManager;
 
-    constructor() {
+    constructor(definition: DefinitionManager) {
         this.usedMemberName = new Set<string>();
         this.cntMemberPrefix = new Map<string, number>();
+        this.definition = definition;
     }
 
     public clear(): void {
@@ -55,7 +58,7 @@ class Script {
             const topBlock = new Block();
             topBlock.loadFromXML(blockXML);
             topBlock.isTop = true;
-            if (topBlock.opcode === 'event_whenflagclicked') {
+            if (this.definition.get(topBlock.opcode).type === BlockType.HEAD) {
                 blockSet.topBlock = topBlock;
             }
             else {
@@ -80,8 +83,12 @@ class Script {
     }
 
     private generateMemberName(opcode: string): string {
-        let name = 'unnamedBlocks';
-        if (opcode === 'event_whenflagclicked') name = 'whenGreenFlag';
+        let name = 'anonymousBlockSet';
+
+        const def = this.definition.get(opcode);
+        if (def.type === BlockType.HEAD) {
+            name = def.memberName;
+        }
         
         if (this.usedMemberName.has(name)) {
             const suffix = this.cntMemberPrefix.get(name) + 1;
@@ -97,12 +104,12 @@ class Script {
         return name;
     }
 
-    public generateCode(definition: DefinitionManager): string {
+    public generateCode(): string {
         this.clearCode();
 
         for (const blockSet of this.blockSets) {
             const memberName = this.generateMemberName(blockSet.topBlock.opcode);
-            this.code.push(blockSet.generateCodeWithName(memberName, definition));
+            this.code.push(blockSet.generateCodeWithName(memberName, this.definition));
         }
 
         return this.code.join('\n');

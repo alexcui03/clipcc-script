@@ -6,8 +6,8 @@ const xml: string = fs.readFileSync(`./test/xml/${process.argv[2]}.xml`, {encodi
 
 const definition = new DefinitionManager();
 
-const script = new Script();
+const script = new Script(definition);
 script.loadFromXML(xml);
-console.log(script.generateCode(definition));
+console.log(script.generateCode());
 
 console.log(script.exportXML());

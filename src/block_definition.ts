@@ -2,11 +2,31 @@ import BlockPrototype, { BlockType, ParamType, ValueType } from "./block_prototy
 
 const blockPrototypes = new Map<string, BlockPrototype>([
     // Event
+    // event_whentouchingobject
     ['event_whenflagclicked', {
         opcode: 'event_whenflagclicked',
         type: BlockType.HEAD,
+        memberName: 'whenGreenFlag',
         params: []
     }],
+    ['event_whenthisspriteclicked', {
+        opcode: 'event_whenthisspriteclicked',
+        type: BlockType.HEAD,
+        memberName: 'whenClicked',
+        params: []
+    }],
+    ['event_whenstageclicked', {
+        opcode: 'event_whenstageclicked',
+        type: BlockType.HEAD,
+        memberName: 'whenStageClicked',
+        params: []
+    }],
+    // event_whenbroadcastreceived
+    // event_whenbackdropswitchesto
+    // event_whengreaterthan
+    // event_broadcast
+    // event_broadcastandwait
+    // event_whenkeypressed
 
     // Control
     ['control_forever', {
@@ -171,10 +191,42 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             ].join('\n');
         }
     }],
-    // control_get_counter // deprecate
-    // control_incr_counter // deprecate
-    // control_clear_counter // deprecate
-    // control_all_at_once // deprecate
+    ['control_get_counter', { // deprecate
+        opcode: 'control_get_counter',
+        type: BlockType.CALLABLE,
+        params: [],
+        toCode: (params: Map<string, string>): string => {
+            return 'this.counter';
+        }
+    }],
+    ['control_incr_counter', { // deprecate
+        opcode: 'control_incr_counter',
+        type: BlockType.BODY,
+        params: [],
+        toCode: (params: Map<string, string>): string => {
+            return '++this.counter;';
+        }
+    }],
+    ['control_clear_counter', { // deprecate
+        opcode: 'control_clear_counter',
+        type: BlockType.BODY,
+        params: [],
+        toCode: (params: Map<string, string>): string => {
+            return 'this.counter = 0;';
+        }
+    }],
+    ['control_all_at_once', { // deprecate
+        opcode: 'control_all_at_once',
+        type: BlockType.STATEMENT,
+        params: [
+            { name: 'SUBSTACK', type: ParamType.STATEMENT, valueType: ValueType.STATEMENT }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return [
+                '{', `${params.get('SUBSTACK')}`, '}'
+            ].join('\n');
+        }
+    }],
 
     // Operator
     ['operator_add', {

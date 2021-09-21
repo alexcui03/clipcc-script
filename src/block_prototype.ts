@@ -14,6 +14,7 @@ interface BlockPrototype {
     opcode: string;
     type: BlockType;
     params: BlockParamPrototype[];
+    memberName?: string;
     toCode?: (params: Map<string, string>) => string;
 }
 

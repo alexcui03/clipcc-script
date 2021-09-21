@@ -7,8 +7,8 @@ const code: string = fs.readFileSync(`./test/ccs/${process.argv[2]}.js`, {encodi
 
 const definition = new DefinitionManager();
 
-const script = new Script();
+const script = new Script(definition);
 const parser = new CodeParser(script);
 parser.loadFullCode(code);
 console.log(script.exportXML());
-console.log(script.generateCode(definition));
+console.log(script.generateCode());

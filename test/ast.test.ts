@@ -1,11 +1,14 @@
-import fs from "fs";
-import acorn = require('acorn');
+import fs from 'fs';
+import CodeParser from '../src/code_parser';
+import DefinitionManager from '../src/definition_manager';
+import Script from '../src/script';
 
-const js: string = fs.readFileSync(`./test/ccs/${process.argv[2]}.js`, {encoding: 'utf-8'});
+const code: string = fs.readFileSync(`./test/ccs/${process.argv[2]}.js`, {encoding: 'utf-8'});
 
-const option: acorn.Options = {
-    ecmaVersion: 2020,
-    sourceType: 'module'
-};
+const definition = new DefinitionManager();
 
-console.log(acorn.parse(js, option));
+const script = new Script();
+const parser = new CodeParser(script);
+parser.loadFullCode(code);
+console.log(script.exportXML());
+console.log(script.generateCode(definition));

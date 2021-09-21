@@ -1,6 +1,4 @@
 import XML from 'fast-xml-parser';
-import acorn = require('acorn');
-
 import Block, { BlockField, BlockInput, BlockShadow } from './block';
 import BlockSet from './block_set';
 import DefinitionManager from './definition_manager';
@@ -8,11 +6,11 @@ import { loadArray } from './util';
 import Variable from './variable';
 
 class Script {
-    private blockSets: BlockSet[] = [];
-    private variables: Variable[] = [];
-    private code: string[] = [];
-    private usedMemberName: Set<string>;
-    private cntMemberPrefix: Map<string, number>;
+    public blockSets: BlockSet[] = [];
+    public variables: Variable[] = [];
+    public code: string[] = [];
+    public usedMemberName: Set<string>;
+    public cntMemberPrefix: Map<string, number>;
 
     constructor() {
         this.usedMemberName = new Set<string>();

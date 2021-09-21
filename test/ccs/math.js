@@ -2,14 +2,15 @@ import Stage from 'clipcc-script/stage';
 
 class TestStage extends Stage {
     constructor() {
-        this.a = 0;
+        this.x = 0;
+        this.y = 0;
     }
 
     whenGreenFlag() {
-        this.a = 1; // This is an comment
+        this.x = 1; // This is an comment
         /*
          * This is block comment
          */
-        this.a = this.a + 1;
+        this.x = 7 + 1 * 2;
     }
 }

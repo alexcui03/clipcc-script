@@ -1,6 +1,6 @@
-import acorn = require('acorn');
+import babel = require('@babel/parser');
+import type = require('@babel/types');
 import Script from './script';
-import estree from 'estree';
 import Block, { BlockInput, BlockShadow, BlockStatement } from './block';
 import { generateBlockID } from './util';
 import BlockSet from './block_set';
@@ -18,23 +18,21 @@ class CodeStatement {
 }
 
 class CodeParser {
-    public option: acorn.Options;
+    public option: babel.ParserOptions;
     public script: Script;
 
     constructor(script: Script) {
         this.option = {
-            ecmaVersion: 2020,
             sourceType: 'module'
         };
         this.script = script;
     }
 
     public loadFullCode(code: string): void {
-        const ast = acorn.parse(code, this.option);
-        
+        const ast = babel.parse(code, this.option).program;
         this.script.clear();
 
-        const program = <estree.Program><unknown>ast;
+        const program = ast;
         for (const node of program.body) {
             switch (node.type) {
                 case 'ImportDeclaration': {
@@ -52,11 +50,11 @@ class CodeParser {
         }
     }
 
-    private parseImportDeclaration(node: estree.ImportDeclaration): void {
+    private parseImportDeclaration(node: type.ImportDeclaration): void {
         // @todo
     }
 
-    private parseClassDeclaration(node: estree.ClassDeclaration): void {
+    private parseClassDeclaration(node: type.ClassDeclaration): void {
         // get class name
         const className = node.id.name;
 
@@ -72,10 +70,10 @@ class CodeParser {
 
         // parse each method/property
         for (const item of node.body.body) {
-            if (item.type === 'MethodDefinition') {
-                const methodName = (<estree.Identifier>item.key).name;
+            if (item.type === 'ClassMethod') {
+                const methodName = (<type.Identifier>item.key).name;
                 const blockSet = new BlockSet();
-                blockSet.bodyBlocks = this.parseBlockStatement(item.value.body);
+                blockSet.bodyBlocks = this.parseBlockStatement(item.body);
                 blockSet.topBlock = new Block();
                 if (methodName === 'whenGreenFlag') {
                     blockSet.topBlock.opcode = 'event_whenflagclicked';
@@ -97,7 +95,7 @@ class CodeParser {
         }
     }
 
-    private parseBlockStatement(node: estree.BlockStatement): Block[] {
+    private parseBlockStatement(node: type.BlockStatement): Block[] {
         const blocks: Block[] = [];
         for (const statement of node.body) {
             switch (statement.type) {
@@ -106,10 +104,9 @@ class CodeParser {
                     break;
                 }
                 case 'WhileStatement': {
-                    if (statement.test.type === 'Literal') {
-                        const value = statement.test.value;
+                    if (statement.test.type === 'BooleanLiteral') {
                         // while (true)
-                        if (value) { // true, 1, etc...
+                        if (statement.test.value) {
                             const block = new Block();
                             block.id = generateBlockID();
                             block.opcode = 'control_forever';
@@ -197,7 +194,7 @@ class CodeParser {
         return blocks;
     }
 
-    private parseExpressionStatement(node: estree.ExpressionStatement): Block {
+    private parseExpressionStatement(node: type.ExpressionStatement): Block {
         switch (node.expression.type) {
             case 'AssignmentExpression': {
                 const operator = node.expression.operator; // only support =, +=
@@ -251,16 +248,19 @@ class CodeParser {
         }
     }
     
-    private parseSetPropertyExpression(property: string, right: estree.Expression): Block {
+    private parseSetPropertyExpression(property: string, right: type.Expression): Block {
         const block = new Block();
         return block;
     }
 
     private parseExpressionOrLiteralToInput(
-        node: estree.Expression, shadow?: boolean, shadowType?: string, fieldName?: string
+        node: type.Expression, shadow?: boolean, shadowType?: string, fieldName?: string
     ): BlockInput {
         const input = new BlockInput();
-        if (node.type === 'Literal' && shadow) {
+        if (shadow && (
+            node.type === 'StringLiteral' || node.type === 'BigIntLiteral' ||
+            node.type === 'NumericLiteral' || node.type === 'DecimalLiteral'
+        )) {
             input.shadow = new BlockShadow();
             input.shadow.fieldName = fieldName;
             input.shadow.id = generateBlockID();
@@ -280,7 +280,7 @@ class CodeParser {
         return input;
     }
 
-    private parseExpression(node: estree.Expression): Block {
+    private parseExpression(node: type.Expression): Block {
         switch (node.type) {
             case 'BinaryExpression': {
                 const operator = node.operator;
@@ -291,7 +291,7 @@ class CodeParser {
                     // @todo: string add
                     block.opcode = 'operator_add';
                     block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        node.left, true, 'math_number', 'NUM'
+                        <type.Expression>node.left, true, 'math_number', 'NUM'
                     ));
                     block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
                         node.right, true, 'math_number', 'NUM'
@@ -302,7 +302,7 @@ class CodeParser {
                     else if (operator === '*') block.opcode = 'operator_multiply';
                     else if (operator === '/') block.opcode = 'operator_divide';
                     block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        node.left, true, 'math_number', 'NUM'
+                        <type.Expression>node.left, true, 'math_number', 'NUM'
                     ));
                     block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
                         node.right, true, 'math_number', 'NUM'
@@ -313,7 +313,7 @@ class CodeParser {
                     else if (operator === '>') block.opcode = 'operator_gt';
                     else if (operator === '==') block.opcode = 'operator_equals';
                     block.inputs.set('OPERAND1', this.parseExpressionOrLiteralToInput(
-                        node.left, true, 'text', 'TEXT'
+                        <type.Expression>node.left, true, 'text', 'TEXT'
                     ));
                     block.inputs.set('OPERAND2', this.parseExpressionOrLiteralToInput(
                         node.right, true, 'text', 'TEXT'

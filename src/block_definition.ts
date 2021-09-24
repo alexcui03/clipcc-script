@@ -127,14 +127,15 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'SUBSTACK', type: ParamType.STATEMENT, valueType: ValueType.STATEMENT }
         ],
         toCode: (params: Map<string, string>): string => {
+            const cond = params.get('CONDITION');
             return [
-                `while (!${params.get('CONDITION')}) {`,
+                `while (${cond[0] === '!' ? cond.slice(1) : '!' + cond}) {`,
                 params.get('SUBSTACK'),
                 '}'
             ].join('\n');
         }
     }],
-    ['control_while', { // deprecate
+    /*['control_while', { // deprecate
         opcode: 'control_while',
         type: BlockType.STATEMENT,
         params: [
@@ -148,8 +149,8 @@ const blockPrototypes = new Map<string, BlockPrototype>([
                 '}'
             ].join('\n');
         }
-    }],
-    ['control_for_each', { // deprecate
+    }],*/
+    /*['control_for_each', { // deprecate
         opcode: 'control_for_each',
         type: BlockType.STATEMENT,
         params: [
@@ -164,7 +165,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
                 '}'
             ].join('\n');
         }
-    }],
+    }],*/
     ['control_start_as_clone', {
         opcode: 'control_start_as_clone',
         type: BlockType.HEAD,
@@ -191,31 +192,31 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             ].join('\n');
         }
     }],
-    ['control_get_counter', { // deprecate
+    /*['control_get_counter', { // deprecate
         opcode: 'control_get_counter',
         type: BlockType.CALLABLE,
         params: [],
         toCode: (params: Map<string, string>): string => {
             return 'this.counter';
         }
-    }],
-    ['control_incr_counter', { // deprecate
+    }],*/
+    /*['control_incr_counter', { // deprecate
         opcode: 'control_incr_counter',
         type: BlockType.BODY,
         params: [],
         toCode: (params: Map<string, string>): string => {
             return '++this.counter;';
         }
-    }],
-    ['control_clear_counter', { // deprecate
+    }],*/
+    /*['control_clear_counter', { // deprecate
         opcode: 'control_clear_counter',
         type: BlockType.BODY,
         params: [],
         toCode: (params: Map<string, string>): string => {
             return 'this.counter = 0;';
         }
-    }],
-    ['control_all_at_once', { // deprecate
+    }],*/
+    /*['control_all_at_once', { // deprecate
         opcode: 'control_all_at_once',
         type: BlockType.STATEMENT,
         params: [
@@ -226,7 +227,7 @@ const blockPrototypes = new Map<string, BlockPrototype>([
                 '{', `${params.get('SUBSTACK')}`, '}'
             ].join('\n');
         }
-    }],
+    }],*/
 
     // Operator
     ['operator_add', {
@@ -238,6 +239,16 @@ const blockPrototypes = new Map<string, BlockPrototype>([
         ],
         toCode: (params: Map<string, string>): string => {
             return `${params.get('NUM1')} + ${params.get('NUM2')}`
+        }
+    }],
+    ['operator_not', {
+        opcode: 'operator_node',
+        type: BlockType.CALLABLE,
+        params: [
+            { name: 'OPERAND', type: ParamType.INPUT, valueType: ValueType.ANY }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return `!(${params.get('OPERAND')})`;
         }
     }],
 

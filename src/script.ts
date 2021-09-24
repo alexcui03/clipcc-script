@@ -86,7 +86,7 @@ class Script {
         let name = 'anonymousBlockSet';
 
         const def = this.definition.getBlock(opcode);
-        if (def.type === BlockType.HEAD) {
+        if (def && def.type === BlockType.HEAD) {
             name = def.memberName;
         }
         

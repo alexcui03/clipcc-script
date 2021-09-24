@@ -1,7 +1,7 @@
 import acorn = require('acorn');
 import Script from './script';
 import estree from 'estree';
-import Block, { BlockInput, BlockShadow } from './block';
+import Block, { BlockInput, BlockShadow, BlockStatement } from './block';
 import { generateBlockID } from './util';
 import BlockSet from './block_set';
 
@@ -74,7 +74,8 @@ class CodeParser {
         for (const item of node.body.body) {
             if (item.type === 'MethodDefinition') {
                 const methodName = (<estree.Identifier>item.key).name;
-                const blockSet = this.parseBlockStatement(item.value.body);
+                const blockSet = new BlockSet();
+                blockSet.bodyBlocks = this.parseBlockStatement(item.value.body);
                 blockSet.topBlock = new Block();
                 if (methodName === 'whenGreenFlag') {
                     blockSet.topBlock.opcode = 'event_whenflagclicked';
@@ -96,12 +97,66 @@ class CodeParser {
         }
     }
 
-    private parseBlockStatement(node: estree.BlockStatement): BlockSet {
-        const blockSet = new BlockSet();
+    private parseBlockStatement(node: estree.BlockStatement): Block[] {
+        const blocks: Block[] = [];
         for (const statement of node.body) {
             switch (statement.type) {
                 case 'ExpressionStatement': {
-                    blockSet.push(this.parseExpressionStatement(statement));
+                    blocks.push(this.parseExpressionStatement(statement));
+                    break;
+                }
+                case 'WhileStatement': {
+                    console.log(statement);
+
+                    // while (xxx)
+                    if (statement.test.type === 'Literal') {
+                        const value = statement.test.value;
+                        if (value) { // true, 1, etc...
+                            const block = new Block();
+                            block.id = generateBlockID();
+                            block.opcode = 'control_forever';
+                            if (statement.body.type === 'BlockStatement') {
+                                const substack = new BlockStatement();
+                                substack.blocks = this.parseBlockStatement(statement.body);
+                                block.statements.set('SUBSTACK', substack);
+                            }
+                            else {
+                                throw 'Wrong While';
+                            }
+                            blocks.push(block);
+                        }
+                        else {
+                            throw 'Wrong While';
+                        }
+                    }
+                    else {
+                        let input = this.parseExpressionOrLiteralToInput(statement.test, false);
+                        if (input.block.opcode === 'operator_not') {
+                            input = input.block.inputs.get('OPERAND');
+                        }
+                        else {
+                            const temp = new BlockInput();
+                            temp.block = new Block();
+                            temp.block.id = generateBlockID();
+                            temp.block.opcode = 'operator_not';
+                            temp.block.inputs.set('OPERAND', input);
+                            input = temp;
+                        }
+
+                        const block = new Block();
+                        block.id = generateBlockID();
+                        block.opcode = 'control_repeat_until';
+                        block.inputs.set('CONDITION', input);
+                        if (statement.body.type === 'BlockStatement') {
+                            const substack = new BlockStatement();
+                            substack.blocks = this.parseBlockStatement(statement.body);
+                            block.statements.set('SUBSTACK', substack);
+                        }
+                        else {
+                            throw 'Wrong While';
+                        }
+                        blocks.push(block);
+                    }
                     break;
                 }
                 default: {
@@ -110,7 +165,7 @@ class CodeParser {
                 }
             }
         }
-        return blockSet;
+        return blocks;
     }
 
     private parseExpressionStatement(node: estree.ExpressionStatement): Block {
@@ -124,7 +179,7 @@ class CodeParser {
                 const left = node.expression.left;
                 const right = node.expression.right;
                 if (left.type === 'MemberExpression') {
-                    console.log(node.expression);
+                    // console.log(node.expression);
                     if (left.object.type === 'ThisExpression') {
                         // this.xxx = xxx;
                         if (left.property.type === 'Identifier') {
@@ -200,8 +255,6 @@ class CodeParser {
         switch (node.type) {
             case 'BinaryExpression': {
                 const operator = node.operator;
-                const left = node.left;
-                const right = node.right;
 
                 const block = new Block();
                 block.id = generateBlockID();
@@ -209,10 +262,10 @@ class CodeParser {
                     // @todo: string add
                     block.opcode = 'operator_add';
                     block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        left, true, 'math_number', 'NUM'
+                        node.left, true, 'math_number', 'NUM'
                     ));
                     block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
-                        right, true, 'math_number', 'NUM'
+                        node.right, true, 'math_number', 'NUM'
                     ));
                 }
                 else if (operator === '-' || operator === '*' || operator === '/') {
@@ -220,10 +273,10 @@ class CodeParser {
                     else if (operator === '*') block.opcode = 'operator_multiply';
                     else if (operator === '/') block.opcode = 'operator_divide';
                     block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        left, true, 'math_number', 'NUM'
+                        node.left, true, 'math_number', 'NUM'
                     ));
                     block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
-                        right, true, 'math_number', 'NUM'
+                        node.right, true, 'math_number', 'NUM'
                     ));
                 }
                 else if (operator === '<' || operator === '>' || operator === '==') {
@@ -231,17 +284,36 @@ class CodeParser {
                     else if (operator === '>') block.opcode = 'operator_gt';
                     else if (operator === '==') block.opcode = 'operator_equals';
                     block.inputs.set('OPERAND1', this.parseExpressionOrLiteralToInput(
-                        left, true, 'text', 'TEXT'
+                        node.left, true, 'text', 'TEXT'
                     ));
                     block.inputs.set('OPERAND2', this.parseExpressionOrLiteralToInput(
-                        right, true, 'text', 'TEXT'
+                        node.right, true, 'text', 'TEXT'
                     ));
+                }
+                else {
+                    throw 'Unknown Binary Expression';
+                }
+                return block;
+            }
+            case 'UnaryExpression': {
+                const operator = node.operator;
+
+                const block = new Block();
+                block.id = generateBlockID();
+                if (operator === '!') {
+                    block.opcode = 'operator_not';
+                    block.inputs.set('OPERAND', this.parseExpressionOrLiteralToInput(
+                        node.argument, false
+                    ));
+                }
+                else {
+                    throw 'Unknown Unary Expression';
                 }
                 return block;
             }
             default: {
                 console.log(node);
-                throw 'Unknown Expression Statement Type';
+                throw 'Unknown Expression Type';
             }
         }
     }

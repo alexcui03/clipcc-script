@@ -106,11 +106,9 @@ class CodeParser {
                     break;
                 }
                 case 'WhileStatement': {
-                    console.log(statement);
-
-                    // while (xxx)
                     if (statement.test.type === 'Literal') {
                         const value = statement.test.value;
+                        // while (true)
                         if (value) { // true, 1, etc...
                             const block = new Block();
                             block.id = generateBlockID();
@@ -157,6 +155,37 @@ class CodeParser {
                         }
                         blocks.push(block);
                     }
+                    break;
+                }
+                case 'IfStatement': {
+                    console.log(statement);
+
+                    const block = new Block();
+                    block.id = generateBlockID();
+                    block.opcode = statement.alternate ? 'control_if_else' : 'control_if';
+                    block.inputs.set('CONDITION', this.parseExpressionOrLiteralToInput(statement.test, false));
+                    
+                    if (statement.consequent.type === 'BlockStatement') {
+                        const substack = new BlockStatement();
+                        substack.blocks = this.parseBlockStatement(statement.consequent);
+                        block.statements.set('SUBSTACK', substack);
+                    }
+                    else {
+                        throw 'Wrong If';
+                    }
+
+                    if (statement.alternate) {
+                        if (statement.alternate.type === 'BlockStatement') {
+                            const substack = new BlockStatement();
+                            substack.blocks = this.parseBlockStatement(statement.consequent);
+                            block.statements.set('SUBSTACK2', substack);
+                        }
+                        else {
+                            throw 'Wrong IfElse';
+                        }
+                    }
+
+                    blocks.push(block);
                     break;
                 }
                 default: {

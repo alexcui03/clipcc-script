@@ -44,18 +44,14 @@ class CodeParser {
 
         const program = ast;
         for (const node of program.body) {
-            switch (node.type) {
-                case 'ImportDeclaration': {
-                    this.parseImportDeclaration(node);
-                    break;
-                }
-                case 'ClassDeclaration': {
-                    this.parseClassDeclaration(node);
-                    break;
-                }
-                default: {
-                    throw 'Unexpected Statement';
-                }
+            if (node.type === 'ImportDeclaration') {
+                this.parseImportDeclaration(node);
+            }
+            else if (node.type === 'ClassDeclaration') {
+                this.parseClassDeclaration(node);
+            }
+            else {
+                throw 'Unexpected Statement';
             }
         }
     }
@@ -289,54 +285,52 @@ class CodeParser {
     }
 
     public parseExpressionStatement(node: type.ExpressionStatement): Block {
-        switch (node.expression.type) {
-            case 'AssignmentExpression': {
-                const operator = node.expression.operator;
-                if (operator !== '=' && operator !== '+=') {
-                    throw 'Unsupported Operator';
-                }
+        if (node.expression.type === 'AssignmentExpression') {
+            const operator = node.expression.operator;
+            if (operator !== '=' && operator !== '+=') {
+                throw 'Unsupported Operator';
+            }
 
-                const left = node.expression.left;
-                const right = node.expression.right;
-                if (left.type === 'MemberExpression') {
-                    if (left.object.type === 'ThisExpression') {
-                        // this.xxx = xxx;
-                        if (left.property.type === 'Identifier') {
-                            const block = this.useCodeRule(
-                                CodeRuleType.AssignmentProperty,
-                                left.property.name, node.expression
-                            );
-                            if (!block) {
-                                // check if this is variable
-                                const variable = this.script.findVariableByIdentifier(left.property.name);
-                                if (variable) {
-                                    const block = new Block();
-                                    block.id = generateBlockID();
-                                    block.opcode = operator === '=' ? 'data_setvariableto' : 'data_changevariableby';
-                                    const field = new BlockField();
-                                    field.id = generateBlockID();
-                                    field.value = variable.name;
-                                    block.fields.set('VARIABLE', field);
-                                    block.inputs.set('VALUE', this.parseExpressionOrLiteralToInput(
-                                        right, true, 'text', 'TEXT'
-                                    ));
-                                    return block;
-                                }
-                                else {
-                                    throw 'Unknown Property';
-                                }
+            const left = node.expression.left;
+            const right = node.expression.right;
+            if (left.type === 'MemberExpression') {
+                if (left.object.type === 'ThisExpression') {
+                    // this.xxx = xxx;
+                    if (left.property.type === 'Identifier') {
+                        const block = this.useCodeRule(
+                            CodeRuleType.AssignmentProperty,
+                            left.property.name, node.expression
+                        );
+                        if (!block) {
+                            // check if this is variable
+                            const variable = this.script.findVariableByIdentifier(left.property.name);
+                            if (variable) {
+                                const block = new Block();
+                                block.id = generateBlockID();
+                                block.opcode = operator === '=' ? 'data_setvariableto' : 'data_changevariableby';
+                                const field = new BlockField();
+                                field.id = generateBlockID();
+                                field.value = variable.name;
+                                block.fields.set('VARIABLE', field);
+                                block.inputs.set('VALUE', this.parseExpressionOrLiteralToInput(
+                                    right, true, 'text', 'TEXT'
+                                ));
+                                return block;
                             }
-                            return block;
+                            else {
+                                throw 'Unknown Property';
+                            }
                         }
-                    }
-                    else {
-                        throw 'Unsupported Property of Property';
+                        return block;
                     }
                 }
+                else {
+                    throw 'Unsupported Property of Property';
+                }
             }
-            default: {
-                throw 'Unknown Expression Statement Type';
-            }
+        }
+        else {
+            throw 'Unknown Expression Statement Type';
         }
     }
 

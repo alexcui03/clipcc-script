@@ -5,6 +5,7 @@ import Block, { BlockInput, BlockShadow, BlockStatement } from './block';
 import { generateBlockID } from './util';
 import BlockSet from './block_set';
 import { CodeRuleType } from './code_rule';
+import Variable from './variable';
 
 // @todo: cross-line optimization
 enum CodeStatementType {
@@ -100,14 +101,23 @@ class CodeParser {
 
                 if (item.decorators) {
                     for (const decorator of item.decorators) {
-                        this.parseDecorator(blockSet, decorator);
+                        this.parseMethodDecorator(blockSet, decorator);
                     }
                 }
 
                 this.script.blockSets.push(blockSet);
             }
+            else if (item.type === 'ClassProperty') {
+                console.log(item);
+                for (const decorator of item.decorators) {
+                    if (item.key.type !== 'Identifier') {
+                        throw 'Property Syntax Error';
+                    }
+                    this.parsePropertyDecorator(item.key, decorator);
+                }
+            }
             else {
-                throw 'Invalid Property Definition';
+                throw 'Syntax Error';
             }
         }
     }
@@ -126,7 +136,30 @@ class CodeParser {
         }
     }
 
-    public parseDecorator(blockSet: BlockSet, node: type.Decorator): void {
+    public parsePropertyDecorator(property: type.Identifier, node: type.Decorator): void {
+        const expression = node.expression;
+
+        if (expression.type === 'CallExpression' && expression.callee.type === 'Identifier') {
+            if (expression.callee.name === 'variable') {
+                // arg[0]: var name
+                const variable = new Variable();
+                variable.id = generateBlockID();
+                variable.name = this.parseLiteral(<type.Literal>expression.arguments[0], 'StringLiteral');
+                variable.identifier = property.name;
+                variable.isLocal = true;
+                variable.isCloud = false;
+                this.script.variables.push(variable);
+            }
+            else {
+                throw 'Unknown Decorator';
+            }
+        }
+        else {
+            throw 'Unsupported Decorator Syntax';
+        }
+    }
+
+    public parseMethodDecorator(blockSet: BlockSet, node: type.Decorator): void {
         const expression = node.expression;
         let topBlock = blockSet.topBlock;
         if (!topBlock.isTop && blockSet.bodyBlocks.length) {
@@ -137,18 +170,14 @@ class CodeParser {
         }
 
         if (expression.type === 'CallExpression' && expression.callee.type === 'Identifier') {
-            switch (expression.callee.name) {
-                case 'position': {
-                    // arg[0]: x
-                    topBlock.x = this.parseLiteral(<type.Literal>expression.arguments[0], 'NumericLiteral');
-                    // arg[1]: y
-                    topBlock.y = this.parseLiteral(<type.Literal>expression.arguments[1], 'NumericLiteral');
-                    // console.log(topBlock);
-                    break;
-                }
-                default: {
-                    throw 'Unknown Decorator';
-                }
+            if (expression.callee.name === 'position') {
+                // arg[0]: x
+                topBlock.x = this.parseLiteral(<type.Literal>expression.arguments[0], 'NumericLiteral');
+                // arg[1]: y
+                topBlock.y = this.parseLiteral(<type.Literal>expression.arguments[1], 'NumericLiteral');
+            }
+            else {
+                throw 'Unknown Decorator';
             }
         }
         else {

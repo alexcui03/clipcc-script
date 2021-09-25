@@ -107,6 +107,10 @@ class Script {
     public generateCode(): string {
         this.clearCode();
 
+        for (const variable of this.variables) {
+            this.code.push(variable.generateCode());
+        }
+
         for (const blockSet of this.blockSets) {
             const memberName = this.generateMemberName(blockSet.topBlock.opcode);
             this.code.push(blockSet.generateCodeWithName(memberName, this.definition));

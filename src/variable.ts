@@ -4,6 +4,7 @@ class Variable {
     public isLocal: boolean;
     public isCloud: boolean;
     public name: string;
+    public identifier: string;
 
     public loadFromXML(xml: any) {
         this.type = xml['@_type'];
@@ -21,6 +22,13 @@ class Variable {
             '@_isCloud': this.isCloud,
             '#text': this.name
         };
+    }
+
+    public generateCode(): string {
+        return [
+            `@variable('${this.name}')`,
+            `${this.identifier} = ''`
+        ].join('\n');
     }
 }
 

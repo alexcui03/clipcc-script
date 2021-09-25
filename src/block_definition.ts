@@ -1,4 +1,5 @@
 import BlockPrototype, { BlockType, ParamType, ValueType } from "./block_prototype";
+import Script from "./script";
 
 const blockPrototypes = new Map<string, BlockPrototype>([
     // Event
@@ -270,8 +271,9 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'VARIABLE', type: ParamType.FIELD, valueType: ValueType.FIELD },
             { name: 'VALUE', type: ParamType.INPUT, valueType: ValueType.ANY }
         ],
-        toCode: (params: Map<string, string>): string => {
-            return `this.var.${params.get('VARIABLE')} = ${params.get('VALUE')};`;
+        toCode: (params: Map<string, string>, script: Script): string => {
+            const variable = script.findVariableByName(params.get('VARIABLE'));
+            return `this.${variable.identifier} = ${params.get('VALUE')};`;
         }
     }],
     ['data_changevariableby', {
@@ -281,8 +283,9 @@ const blockPrototypes = new Map<string, BlockPrototype>([
             { name: 'VARIABLE', type: ParamType.FIELD, valueType: ValueType.FIELD },
             { name: 'VALUE', type: ParamType.INPUT, valueType: ValueType.ANY }
         ],
-        toCode: (params: Map<string, string>): string => {
-            return `this.var.${params.get('VARIABLE')} += ${params.get('VALUE')};`;
+        toCode: (params: Map<string, string>, script: Script): string => {
+            const variable = script.findVariableByName(params.get('VARIABLE'));
+            return `this.${variable.identifier} += ${params.get('VALUE')};`;
         }
     }]
 ]);

@@ -113,7 +113,7 @@ class Script {
 
         for (const blockSet of this.blockSets) {
             const memberName = this.generateMemberName(blockSet.topBlock.opcode);
-            this.code.push(blockSet.generateCodeWithName(memberName, this.definition));
+            this.code.push(blockSet.generateCodeWithName(memberName, this));
         }
 
         return this.code.join('\n');
@@ -145,6 +145,24 @@ class Script {
 
     public loadFromCode(code: string): void {
         this.clear();
+    }
+
+    public findVariableByIdentifier(identifier: string): Variable {
+        for (const variable of this.variables) {
+            if (variable.identifier === identifier) {
+                return variable;
+            }
+        }
+        return null;
+    }
+
+    public findVariableByName(name: string): Variable {
+        for (const variable of this.variables) {
+            if (variable.name === name) {
+                return variable;
+            }
+        }
+        return null;
     }
 }
 

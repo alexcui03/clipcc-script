@@ -1,5 +1,5 @@
 import Block from "./block";
-import DefinitionManager from "./definition_manager";
+import Script from "./script";
 
 class BlockSet {
     public topBlock: Block;
@@ -15,7 +15,7 @@ class BlockSet {
         else return null;
     }
 
-    public generateCodeWithName(name: string, definition: DefinitionManager): string {
+    public generateCodeWithName(name: string, script: Script): string {
         const code: string[] = [];
 
         const topBlock = this.getTopBlock();
@@ -26,7 +26,7 @@ class BlockSet {
         code.push(`${name}() {`);
 
         for (const block of this.bodyBlocks) {
-            code.push(block.generateCode(definition));
+            code.push(block.generateCode(script));
         }
 
         code.push('}');

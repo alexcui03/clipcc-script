@@ -12,7 +12,6 @@ class TestStage extends Stage {
 
     @position(0, 0)
     whenGreenFlag() {
-        this.x = 10;
-        this.y = 10;
+        this.var = 1;
     }
 }

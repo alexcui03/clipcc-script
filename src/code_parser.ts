@@ -1,7 +1,7 @@
 import babel = require('@babel/parser');
 import type = require('@babel/types');
 import Script from './script';
-import Block, { BlockInput, BlockShadow, BlockStatement } from './block';
+import Block, { BlockField, BlockInput, BlockShadow, BlockStatement } from './block';
 import { generateBlockID } from './util';
 import BlockSet from './block_set';
 import { CodeRuleType } from './code_rule';
@@ -293,6 +293,9 @@ class CodeParser {
         switch (node.expression.type) {
             case 'AssignmentExpression': {
                 const operator = node.expression.operator;
+                if (operator !== '=' && operator !== '+=') {
+                    throw 'Unsupported Operator';
+                }
 
                 const left = node.expression.left;
                 const right = node.expression.right;
@@ -305,8 +308,24 @@ class CodeParser {
                                 left.property.name, node.expression
                             );
                             if (!block) {
-                                // check if variable
-                                // @todo
+                                // check if this is variable
+                                const variable = this.script.findVariableByIdentifier(left.property.name);
+                                if (variable) {
+                                    const block = new Block();
+                                    block.id = generateBlockID();
+                                    block.opcode = operator === '=' ? 'data_setvariableto' : 'data_changevariableby';
+                                    const field = new BlockField();
+                                    field.id = generateBlockID();
+                                    field.value = variable.name;
+                                    block.fields.set('VARIABLE', field);
+                                    block.inputs.set('VALUE', this.parseExpressionOrLiteralToInput(
+                                        right, true, 'text', 'TEXT'
+                                    ));
+                                    return block;
+                                }
+                                else {
+                                    throw 'Unknown Property';
+                                }
                             }
                             return block;
                         }

@@ -1,4 +1,5 @@
 import DefinitionManager from "./definition_manager";
+import Script from "./script";
 import { loadArray } from "./util";
 
 class BlockShadow {
@@ -155,8 +156,8 @@ class Block {
         return xml;
     }
 
-    public generateCode(definition: DefinitionManager, needSemicolon: boolean = false) {
-        if (definition.getBlock(this.opcode) && definition.getBlock(this.opcode).toCode) {
+    public generateCode(script: Script, needSemicolon: boolean = false) {
+        if (script.definition.getBlock(this.opcode) && script.definition.getBlock(this.opcode).toCode) {
             const params = new Map<string, string>();
 
             for (const [name, field] of this.fields) {
@@ -164,16 +165,16 @@ class Block {
             }
 
             for (const [name, input] of this.inputs) {
-                if (input.block) params.set(name, input.block.generateCode(definition, false));
+                if (input.block) params.set(name, input.block.generateCode(script, false));
                 else if (input.shadow) params.set(name, String(input.shadow.value));
                 else params.set(name, 'null');
             }
 
             for (const [name, statement] of this.statements) {
-                params.set(name, statement.blocks.map(block => block.generateCode(definition, true)).join('\n'));
+                params.set(name, statement.blocks.map(block => block.generateCode(script, true)).join('\n'));
             }
 
-            return definition.getBlock(this.opcode).toCode(params);
+            return script.definition.getBlock(this.opcode).toCode(params, script);
         }
         else {
             const params: string[] = [];
@@ -183,13 +184,13 @@ class Block {
             }
 
             for (const [name, input] of this.inputs) {
-                if (input.block) params.push(input.block.generateCode(definition, false));
+                if (input.block) params.push(input.block.generateCode(script, false));
                 else if (input.shadow) params.push(String(input.shadow.value));
                 else params.push('null');
             }
 
             for (const [name, statement] of this.statements) {
-                const body = statement.blocks.map(block => block.generateCode(definition, true)).join('\n');
+                const body = statement.blocks.map(block => block.generateCode(script, true)).join('\n');
                 params.push(`() => {\n${body}\n}`);
             }
 

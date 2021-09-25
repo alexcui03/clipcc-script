@@ -2,16 +2,16 @@ import Stage from 'clipcc-script/stage';
 
 class TestStage extends Stage {
     @variable('This_Is_Private_Var')
-    var = '';
+    var = 0;
 
-    @position(200, 0)
+    @position(0, 200)
     unnamed() {
-        this.x = 0;
+        this.x = this.var;
         this.y = 0;
     }
 
     @position(0, 0)
     whenGreenFlag() {
-        this.var = 1;
+        this.var = this.y;
     }
 }

@@ -260,8 +260,9 @@ const blockPrototypes = new Map<string, BlockPrototype>([
         params: [
             { name: 'VARIABLE', type: ParamType.FIELD, valueType: ValueType.FIELD }
         ],
-        toCode: (params: Map<string, string>): string => {
-            return `this.var.${params.get('VARIABLE')}`;
+        toCode: (params: Map<string, string>, script: Script): string => {
+            const variable = script.findVariableByName(params.get('VARIABLE'));
+            return `this.${variable.identifier}`;
         }
     }],
     ['data_setvariableto', {

@@ -108,7 +108,6 @@ class CodeParser {
                 this.script.blockSets.push(blockSet);
             }
             else if (item.type === 'ClassProperty') {
-                console.log(item);
                 for (const decorator of item.decorators) {
                     if (item.key.type !== 'Identifier') {
                         throw 'Property Syntax Error';
@@ -340,11 +339,6 @@ class CodeParser {
             }
         }
     }
-    
-    public parseSetPropertyExpression(property: string, right: type.Expression): Block {
-        const block = new Block();
-        return block;
-    }
 
     public parseExpressionOrLiteralToInput(
         node: type.Expression, shadow?: boolean, shadowType?: string, fieldName?: string
@@ -374,69 +368,99 @@ class CodeParser {
     }
 
     public parseExpression(node: type.Expression): Block {
-        switch (node.type) {
-            case 'BinaryExpression': {
-                const operator = node.operator;
+        if (node.type === 'BinaryExpression') {
+            const operator = node.operator;
 
-                const block = new Block();
-                block.id = generateBlockID();
-                if (operator === '+') {
-                    // @todo: string add
-                    block.opcode = 'operator_add';
-                    block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        <type.Expression>node.left, true, 'math_number', 'NUM'
-                    ));
-                    block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
-                        node.right, true, 'math_number', 'NUM'
-                    ));
-                }
-                else if (operator === '-' || operator === '*' || operator === '/') {
-                    if (operator === '-') block.opcode = 'operator_substract';
-                    else if (operator === '*') block.opcode = 'operator_multiply';
-                    else if (operator === '/') block.opcode = 'operator_divide';
-                    block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
-                        <type.Expression>node.left, true, 'math_number', 'NUM'
-                    ));
-                    block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
-                        node.right, true, 'math_number', 'NUM'
-                    ));
-                }
-                else if (operator === '<' || operator === '>' || operator === '==') {
-                    if (operator === '<') block.opcode = 'operator_lt';
-                    else if (operator === '>') block.opcode = 'operator_gt';
-                    else if (operator === '==') block.opcode = 'operator_equals';
-                    block.inputs.set('OPERAND1', this.parseExpressionOrLiteralToInput(
-                        <type.Expression>node.left, true, 'text', 'TEXT'
-                    ));
-                    block.inputs.set('OPERAND2', this.parseExpressionOrLiteralToInput(
-                        node.right, true, 'text', 'TEXT'
-                    ));
-                }
-                else {
-                    throw 'Unknown Binary Expression';
-                }
-                return block;
+            const block = new Block();
+            block.id = generateBlockID();
+            if (operator === '+') {
+                // @todo: string add
+                block.opcode = 'operator_add';
+                block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
+                    <type.Expression>node.left, true, 'math_number', 'NUM'
+                ));
+                block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
+                    node.right, true, 'math_number', 'NUM'
+                ));
             }
-            case 'UnaryExpression': {
-                const operator = node.operator;
+            else if (operator === '-' || operator === '*' || operator === '/') {
+                if (operator === '-') block.opcode = 'operator_substract';
+                else if (operator === '*') block.opcode = 'operator_multiply';
+                else if (operator === '/') block.opcode = 'operator_divide';
+                block.inputs.set('NUM1', this.parseExpressionOrLiteralToInput(
+                    <type.Expression>node.left, true, 'math_number', 'NUM'
+                ));
+                block.inputs.set('NUM2', this.parseExpressionOrLiteralToInput(
+                    node.right, true, 'math_number', 'NUM'
+                ));
+            }
+            else if (operator === '<' || operator === '>' || operator === '==') {
+                if (operator === '<') block.opcode = 'operator_lt';
+                else if (operator === '>') block.opcode = 'operator_gt';
+                else if (operator === '==') block.opcode = 'operator_equals';
+                block.inputs.set('OPERAND1', this.parseExpressionOrLiteralToInput(
+                    <type.Expression>node.left, true, 'text', 'TEXT'
+                ));
+                block.inputs.set('OPERAND2', this.parseExpressionOrLiteralToInput(
+                    node.right, true, 'text', 'TEXT'
+                ));
+            }
+            else {
+                throw 'Unknown Binary Expression';
+            }
+            return block;
+        }
+        else if (node.type === 'UnaryExpression') {
+            const operator = node.operator;
 
-                const block = new Block();
-                block.id = generateBlockID();
-                if (operator === '!') {
-                    block.opcode = 'operator_not';
-                    block.inputs.set('OPERAND', this.parseExpressionOrLiteralToInput(
-                        node.argument, false
-                    ));
-                }
-                else {
-                    throw 'Unknown Unary Expression';
-                }
-                return block;
+            const block = new Block();
+            block.id = generateBlockID();
+            if (operator === '!') {
+                block.opcode = 'operator_not';
+                block.inputs.set('OPERAND', this.parseExpressionOrLiteralToInput(
+                    node.argument, false
+                ));
             }
-            default: {
-                console.log(node);
-                throw 'Unknown Expression Type';
+            else {
+                throw 'Unknown Unary Expression';
             }
+            return block;
+        }
+        else if (node.type === 'MemberExpression') {
+            if (node.object.type === 'ThisExpression') {
+                // this.xxx = xxx;
+                if (node.property.type === 'Identifier') {
+                    const block = this.useCodeRule(
+                        CodeRuleType.GetProperty,
+                        node.property.name, node
+                    );
+                    if (!block) {
+                        // check if this is variable
+                        const variable = this.script.findVariableByIdentifier(node.property.name);
+                        if (variable) {
+                            const block = new Block();
+                            block.id = generateBlockID();
+                            block.opcode = 'data_variable';
+                            const field = new BlockField();
+                            field.id = generateBlockID();
+                            field.value = variable.name;
+                            block.fields.set('VARIABLE', field);
+                            return block;
+                        }
+                        else {
+                            throw 'Unknown Property';
+                        }
+                    }
+                    return block;
+                }
+            }
+            else {
+                throw 'Unsupported Property of Property';
+            }
+        }
+        else {
+            console.log(node);
+            throw 'Unknown Expression Type';
         }
     }
 

@@ -2,7 +2,8 @@ import Block from "./block";
 import CodeParser from "./code_parser";
 
 enum CodeRuleType {
-    AssignmentProperty
+    AssignmentProperty,
+    GetProperty
 }
 
 type CodeRuleFunction<T> = (node: T, parser?: CodeParser) => Block;

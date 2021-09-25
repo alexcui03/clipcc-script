@@ -28,6 +28,26 @@ const codeRules = new Map<CodeRuleType, CodeRuleMap>([
             ));
             return block;
         }]
+    ])],
+    [CodeRuleType.GetProperty, new Map<string, CodeRuleFunction<type.Expression>>([
+        ['x', (node: type.Expression, parser: CodeParser): Block => {
+            const block = new Block();
+            block.id = generateBlockID();
+            block.opcode = 'motion_xposition';
+            return block;
+        }],
+        ['y', (node: type.Expression, parser: CodeParser): Block => {
+            const block = new Block();
+            block.id = generateBlockID();
+            block.opcode = 'motion_yposition';
+            return block;
+        }],
+        ['direction', (node: type.Expression, parser: CodeParser): Block => {
+            const block = new Block();
+            block.id = generateBlockID();
+            block.opcode = 'motion_direction';
+            return block;
+        }]
     ])]
 ]);
 

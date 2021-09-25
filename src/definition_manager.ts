@@ -1,11 +1,11 @@
 import BlockPrototype from "./block_prototype";
 import blockPrototypes from "./block_definition";
-import CodeRule, { CodeRuleType } from "./code_rule";
-import codeRules from "./code_definition";
+import { CodeRule, CodeRuleFunction, CodeRuleType } from "./code_rule";
+import { codeRules } from "./code_definition";
 
 class DefinitionManager {
     private blocks: Map<string, BlockPrototype>;
-    private codeRule: Map<CodeRuleType, CodeRule>;
+    private codeRule: CodeRule;
 
     constructor() {
         this.blocks = blockPrototypes;
@@ -20,13 +20,19 @@ class DefinitionManager {
         return this.blocks.get(opcode);
     }
 
-    public addCodeRule(codeRule: CodeRule): void {
-        this.codeRule.set(codeRule.type, codeRule);
+    public getCodeRule<T = any>(type: CodeRuleType, key: string): CodeRuleFunction<T> {
+        return this.codeRule.get(type).get(key);
     }
 
-    public getCodeRule(type: CodeRuleType): CodeRule {
-        return this.codeRule.get(type);
+    /*
+    public *walkFuzzyCodeRule<T = any>(type: CodeRuleType, key: string): Generator<CodeRuleFunction<T>> {
+        for (const rule of this.codeFuzzyRule.get(type)) {
+            if (rule[0].test(key)) {
+                yield rule[1];
+            }
+        }
     }
+    */
 }
 
 export default DefinitionManager;

@@ -1,14 +1,36 @@
-import CodeRule, { CodeRulePrototype, CodeRuleType } from "./code_rule";
+import type = require('@babel/types');
+import Block from "./block";
+import CodeParser from './code_parser';
+import { CodeRuleFunction, CodeRuleMap, CodeRuleType } from './code_rule';
+import { generateBlockID } from './util';
 
-const codeRules = new Map<CodeRuleType, CodeRule>([
-    [CodeRuleType.SetProperty, {
-        type: CodeRuleType.SetProperty,
-        rules: new Map<string, CodeRulePrototype>([
-            ['x', {
-                key: 'x'
-            }]
-        ])
-    }]
+const codeRules = new Map<CodeRuleType, CodeRuleMap>([
+    [CodeRuleType.AssignmentProperty, new Map<string, CodeRuleFunction<type.AssignmentExpression>>([
+        ['x', (node: type.AssignmentExpression, parser: CodeParser): Block => {
+            const block = new Block();
+            if (node.operator === '=') block.opcode = 'motion_setx';
+            else if (node.operator === '+=') block.opcode = 'motion_changexby';
+            else return null;
+            block.id = generateBlockID();
+            block.inputs.set('X', parser.parseExpressionOrLiteralToInput(
+                node.right, true, 'math_number', 'NUM'
+            ));
+            return block;
+        }],
+        ['y', (node: type.AssignmentExpression, parser: CodeParser): Block => {
+            const block = new Block();
+            if (node.operator === '=') block.opcode = 'motion_sety';
+            else if (node.operator === '+=') block.opcode = 'motion_changeyby';
+            else return null;
+            block.id = generateBlockID();
+            block.inputs.set('Y', parser.parseExpressionOrLiteralToInput(
+                node.right, true, 'math_number', 'NUM'
+            ));
+            return block;
+        }]
+    ])]
 ]);
 
-export default codeRules;
+export {
+    codeRules
+};

@@ -12,7 +12,7 @@ class Script {
     private code: string[] = [];
     private usedMemberName: Set<string>;
     private cntMemberPrefix: Map<string, number>;
-    private definition: DefinitionManager;
+    public definition: DefinitionManager;
 
     constructor(definition: DefinitionManager) {
         this.usedMemberName = new Set<string>();

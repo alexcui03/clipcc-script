@@ -4,6 +4,7 @@ import Script from './script';
 import Block, { BlockInput, BlockShadow, BlockStatement } from './block';
 import { generateBlockID } from './util';
 import BlockSet from './block_set';
+import { CodeRuleType } from './code_rule';
 
 // @todo: cross-line optimization
 enum CodeStatementType {
@@ -29,7 +30,8 @@ class CodeParser {
             plugins: [
                 ['decorators', {
                     decoratorsBeforeExport: false
-                }]
+                }],
+                'classProperties'
             ]
         };
         this.script = script;
@@ -57,11 +59,11 @@ class CodeParser {
         }
     }
 
-    private parseImportDeclaration(node: type.ImportDeclaration): void {
+    public parseImportDeclaration(node: type.ImportDeclaration): void {
         // @todo
     }
 
-    private parseClassDeclaration(node: type.ClassDeclaration): void {
+    public parseClassDeclaration(node: type.ClassDeclaration): void {
         // get class name
         const className = node.id.name;
 
@@ -110,7 +112,7 @@ class CodeParser {
         }
     }
 
-    private parseLiteral(node: type.Literal, type?: LiteralType): any {
+    public parseLiteral(node: type.Literal, type?: LiteralType): any {
         if (type) {
             if (node.type === type) return node.value;
             else throw 'Invalid Literal';
@@ -124,7 +126,7 @@ class CodeParser {
         }
     }
 
-    private parseDecorator(blockSet: BlockSet, node: type.Decorator): void {
+    public parseDecorator(blockSet: BlockSet, node: type.Decorator): void {
         const expression = node.expression;
         let topBlock = blockSet.topBlock;
         if (!topBlock.isTop && blockSet.bodyBlocks.length) {
@@ -154,7 +156,7 @@ class CodeParser {
         }
     }
 
-    private parseBlockStatement(node: type.BlockStatement): Block[] {
+    public parseBlockStatement(node: type.BlockStatement): Block[] {
         const blocks: Block[] = [];
         for (const statement of node.body) {
             switch (statement.type) {
@@ -253,51 +255,35 @@ class CodeParser {
         return blocks;
     }
 
-    private parseExpressionStatement(node: type.ExpressionStatement): Block {
+    public useCodeRule(type: CodeRuleType, key: string, node: type.Expression): Block {
+        const rule = this.script.definition.getCodeRule(type, key);
+        return rule ? rule(node, this) : null;
+    }
+
+    public parseExpressionStatement(node: type.ExpressionStatement): Block {
         switch (node.expression.type) {
             case 'AssignmentExpression': {
-                const operator = node.expression.operator; // only support =, +=
-                if (!(operator === '=' || operator === '+=')) {
-                    throw 'Invalid Opeator ' + operator;
-                }
+                const operator = node.expression.operator;
 
                 const left = node.expression.left;
                 const right = node.expression.right;
                 if (left.type === 'MemberExpression') {
-                    // console.log(node.expression);
                     if (left.object.type === 'ThisExpression') {
                         // this.xxx = xxx;
                         if (left.property.type === 'Identifier') {
-                            // block: motion_setx
-                            if (left.property.name === 'x') {
-                                const block = new Block();
-                                block.opcode = (operator === '=' ? 'motion_setx' : 'motion_changexby');
-                                block.id = generateBlockID();
-                                block.inputs.set('X', this.parseExpressionOrLiteralToInput(
-                                    right, true, 'math_number', 'NUM'
-                                ));
-                                return block;
+                            const block = this.useCodeRule(
+                                CodeRuleType.AssignmentProperty,
+                                left.property.name, node.expression
+                            );
+                            if (!block) {
+                                // check if variable
+                                // @todo
                             }
-                            // block: motion_sety
-                            else if (left.property.name === 'y') {
-                                const block = new Block();
-                                block.opcode = (operator === '=' ? 'motion_sety' : 'motion_changeyby');
-                                block.id = generateBlockID();
-                                block.inputs.set('Y', this.parseExpressionOrLiteralToInput(
-                                    right, true, 'math_number', 'NUM'
-                                ));
-                                return block;
-                            }
+                            return block;
                         }
                     }
-                    else if (left.object.type === 'MemberExpression') {
-                        // this.xxx.xxx = xxx;
-                        if (left.object.object.type === 'ThisExpression') [
-
-                        ]
-                        else {
-
-                        }
+                    else {
+                        throw 'Unsupported Property of Property';
                     }
                 }
             }
@@ -307,12 +293,12 @@ class CodeParser {
         }
     }
     
-    private parseSetPropertyExpression(property: string, right: type.Expression): Block {
+    public parseSetPropertyExpression(property: string, right: type.Expression): Block {
         const block = new Block();
         return block;
     }
 
-    private parseExpressionOrLiteralToInput(
+    public parseExpressionOrLiteralToInput(
         node: type.Expression, shadow?: boolean, shadowType?: string, fieldName?: string
     ): BlockInput {
         const input = new BlockInput();
@@ -339,7 +325,7 @@ class CodeParser {
         return input;
     }
 
-    private parseExpression(node: type.Expression): Block {
+    public parseExpression(node: type.Expression): Block {
         switch (node.type) {
             case 'BinaryExpression': {
                 const operator = node.operator;
@@ -407,7 +393,7 @@ class CodeParser {
     }
 
     /*
-    private parseMemberExpression(node: estree.MemberExpression): CodeStatement {
+    public parseMemberExpression(node: estree.MemberExpression): CodeStatement {
         const result = new CodeStatement();
         result.type = CodeStatementType.MemberList;
         

@@ -17,13 +17,20 @@ class CodeStatement {
     public data: (CodeStatement | string | number | boolean)[];
 }
 
+type LiteralType = 'StringLiteral' | 'NumericLiteral';
+
 class CodeParser {
     public option: babel.ParserOptions;
     public script: Script;
 
     constructor(script: Script) {
         this.option = {
-            sourceType: 'module'
+            sourceType: 'module',
+            plugins: [
+                ['decorators', {
+                    decoratorsBeforeExport: false
+                }]
+            ]
         };
         this.script = script;
     }
@@ -73,6 +80,7 @@ class CodeParser {
             if (item.type === 'ClassMethod') {
                 const methodName = (<type.Identifier>item.key).name;
                 const blockSet = new BlockSet();
+
                 blockSet.bodyBlocks = this.parseBlockStatement(item.body);
                 blockSet.topBlock = new Block();
                 if (methodName === 'whenGreenFlag') {
@@ -87,11 +95,62 @@ class CodeParser {
                     last.next = block;
                     last = block;
                 }
+
+                if (item.decorators) {
+                    for (const decorator of item.decorators) {
+                        this.parseDecorator(blockSet, decorator);
+                    }
+                }
+
                 this.script.blockSets.push(blockSet);
             }
             else {
                 throw 'Invalid Property Definition';
             }
+        }
+    }
+
+    private parseLiteral(node: type.Literal, type?: LiteralType): any {
+        if (type) {
+            if (node.type === type) return node.value;
+            else throw 'Invalid Literal';
+        }
+        else {
+            if (node.type === 'NullLiteral') return null;
+            else if (node.type !== 'RegExpLiteral' && node.type !== 'TemplateLiteral') {
+                return node.value;
+            }
+            else throw 'Invalid Literal';
+        }
+    }
+
+    private parseDecorator(blockSet: BlockSet, node: type.Decorator): void {
+        const expression = node.expression;
+        let topBlock = blockSet.topBlock;
+        if (!topBlock.isTop && blockSet.bodyBlocks.length) {
+            topBlock = blockSet.bodyBlocks[0];
+        }
+        else {
+            return;
+        }
+
+        if (expression.type === 'CallExpression' && expression.callee.type === 'Identifier') {
+            switch (expression.callee.name) {
+                case 'position': {
+                    // arg[0]: x
+                    topBlock.x = this.parseLiteral(<type.Literal>expression.arguments[0], 'NumericLiteral');
+                    // arg[1]: y
+                    topBlock.y = this.parseLiteral(<type.Literal>expression.arguments[1], 'NumericLiteral');
+                    // console.log(topBlock);
+                    break;
+                }
+                default: {
+                    throw 'Unknown Decorator';
+                }
+            }
+        }
+        else {
+            throw 'Unsupported Decorator Syntax';
         }
     }
 

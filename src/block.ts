@@ -100,6 +100,11 @@ class Block {
             statement: []
         };
 
+        if (this.isTop) {
+            xml['@_x'] = this.x;
+            xml['@_y'] = this.y;
+        }
+
         for (const [name, field] of this.fields) {
             xml.field.push({
                 '@_name': name,

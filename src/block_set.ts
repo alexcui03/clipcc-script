@@ -9,8 +9,20 @@ class BlockSet {
         this.bodyBlocks.push(block);
     }
 
+    public getTopBlock(): Block | null {
+        if (this.topBlock) return this.topBlock;
+        else if (this.bodyBlocks.length) return this.bodyBlocks[0];
+        else return null;
+    }
+
     public generateCodeWithName(name: string, definition: DefinitionManager): string {
         const code: string[] = [];
+
+        const topBlock = this.getTopBlock();
+        if (topBlock) {
+            code.push(`@position(${topBlock.x}, ${topBlock.y})`);
+        }
+
         code.push(`${name}() {`);
 
         for (const block of this.bodyBlocks) {

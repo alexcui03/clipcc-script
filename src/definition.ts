@@ -1,16 +1,9 @@
 import BlockPrototype from "./block_prototype";
-import blockPrototypes from "./block_definition";
 import { CodeRule, CodeRuleFunction, CodeRuleType } from "./code_rule";
-import { codeRules } from "./code_definition";
 
-class DefinitionManager {
-    private blocks: Map<string, BlockPrototype>;
-    private codeRule: CodeRule;
-
-    constructor() {
-        this.blocks = blockPrototypes;
-        this.codeRule = codeRules;
-    }
+class Definition {
+    public blocks: Map<string, BlockPrototype>;
+    public codeRule: CodeRule;
 
     public addBlock(block: BlockPrototype): void {
         this.blocks.set(block.opcode, block);
@@ -35,4 +28,4 @@ class DefinitionManager {
     */
 }
 
-export default DefinitionManager;
+export default Definition;

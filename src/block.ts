@@ -1,4 +1,3 @@
-import DefinitionManager from "./definition_manager";
 import Script from "./script";
 import { loadArray } from "./util";
 

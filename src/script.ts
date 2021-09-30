@@ -2,7 +2,7 @@ import XML from 'fast-xml-parser';
 import Block from './block';
 import { BlockType } from './block_prototype';
 import BlockSet from './block_set';
-import DefinitionManager from './definition_manager';
+import Definition from './definition';
 import { loadArray } from './util';
 import Variable from './variable';
 
@@ -12,9 +12,9 @@ class Script {
     private code: string[] = [];
     private usedMemberName: Set<string>;
     private cntMemberPrefix: Map<string, number>;
-    public definition: DefinitionManager;
+    public definition: Definition;
 
-    constructor(definition: DefinitionManager) {
+    constructor(definition: Definition) {
         this.usedMemberName = new Set<string>();
         this.cntMemberPrefix = new Map<string, number>();
         this.definition = definition;

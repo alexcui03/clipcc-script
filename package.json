@@ -7,7 +7,7 @@
   "author": "Alex Cui",
   "license": "AGPL-3",
   "scripts": {
-    "start": "node src/main.js"
+    "build": "tsc"
   },
   "devDependencies": {
     "@babel/types": "^7.15.6",

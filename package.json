@@ -2,7 +2,7 @@
   "name": "clipcc-script",
   "version": "0.1.0",
   "description": "Script for ClipCC.",
-  "main": "src/main.js",
+  "main": "dist/clipcc-script.js",
   "repository": "git@github.com:alexcui03/clipcc-script.git",
   "author": "Alex Cui",
   "license": "AGPL-3",

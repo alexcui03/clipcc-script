@@ -10,16 +10,23 @@ class Project {
     private nameUtil: NameGenerator;
 
     constructor() {
+        this.nameUtil = new NameGenerator();
+        this.nameUtil.checkName('stage');
+
+        this.definition = new Definition();
         this.definition.blocks = blockPrototypes;
         this.definition.codeRule = codeRules;
 
         this.scripts = new Map<string, Script>();
         this.scripts.set('stage', new Script(this.definition));
-
-        this.nameUtil.checkName('stage');
     }
 
-    
+    public getScript(name: string): Script {
+        if (!this.scripts.has(name)) {
+            this.scripts.set(name, new Script(this.definition));
+        }
+        return this.scripts.get(name);
+    }
 }
 
 export default Project;

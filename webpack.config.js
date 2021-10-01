@@ -7,7 +7,12 @@ module.exports = {
     mode: PRODUCTION_MODE === 'production' ? 'production' : 'development',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'clipcc-script.js'
+        filename: 'clipcc-script.js',
+        library: {
+            type: 'commonjs2'
+        },
+        //libraryTarget: 'umd',
+        //libraryExport: 'default'
     },
     module: {
         rules: [{

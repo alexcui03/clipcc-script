@@ -5,30 +5,28 @@ import BlockSet from './block_set';
 import Definition from './definition';
 import { loadArray } from './util';
 import Variable from './variable';
+import NameGenerator from './name_generator';
 
 class Script {
     public blockSets: BlockSet[] = [];
     public variables: Variable[] = [];
     private code: string[] = [];
-    private usedMemberName: Set<string>;
-    private cntMemberPrefix: Map<string, number>;
+    private memberName = new NameGenerator();
     public definition: Definition;
 
     constructor(definition: Definition) {
-        this.usedMemberName = new Set<string>();
-        this.cntMemberPrefix = new Map<string, number>();
         this.definition = definition;
     }
 
     public clear(): void {
         this.blockSets = [];
+        this.variables = [];
         this.clearCode();
     }
 
     public clearCode(): void {
         this.code = [];
-        this.usedMemberName.clear();
-        this.cntMemberPrefix.clear();
+        this.memberName.clear();
     }
     
     public cntBlockSet(): number {
@@ -46,6 +44,7 @@ class Script {
             for (const varXML of variables) {
                 const variable = new Variable();
                 variable.loadFromXML(varXML);
+                variable.identifier = this.memberName.checkIdentifier(variable.name);
                 this.variables.push(variable);
             }
         }
@@ -58,7 +57,9 @@ class Script {
             const topBlock = new Block();
             topBlock.loadFromXML(blockXML);
             topBlock.isTop = true;
-            if (this.definition.getBlock(topBlock.opcode).type === BlockType.HEAD) {
+
+            const def = this.definition.getBlock(topBlock.opcode);
+            if (def && def.type === BlockType.HEAD) {
                 blockSet.topBlock = topBlock;
             }
             else {
@@ -90,22 +91,13 @@ class Script {
             name = def.memberName;
         }
         
-        if (this.usedMemberName.has(name)) {
-            const suffix = this.cntMemberPrefix.get(name) + 1;
-            this.cntMemberPrefix.set(name, suffix + 1);
-            name = name + suffix.toString();
-            this.usedMemberName.add(name);
-        }
-        else {
-            this.usedMemberName.add(name);
-            this.cntMemberPrefix.set(name, 1);
-        }
-        
-        return name;
+        return this.memberName.checkIdentifier(name);
     }
 
     public generateCode(): string {
         this.clearCode();
+
+        this.code.push('class CustomSprite extends Sprite {');
 
         for (const variable of this.variables) {
             this.code.push(variable.generateCode());
@@ -115,6 +107,8 @@ class Script {
             const memberName = this.generateMemberName(blockSet.topBlock.opcode);
             this.code.push(blockSet.generateCodeWithName(memberName, this));
         }
+        
+        this.code.push('}\n');
 
         return this.code.join('\n');
     }

@@ -6,6 +6,7 @@ import { generateBlockID } from './util';
 import BlockSet from './block_set';
 import { CodeRuleType } from './code_rule';
 import Variable from './variable';
+import Broadcast from './broadcast';
 
 // @todo: cross-line optimization
 enum CodeStatementType {
@@ -82,13 +83,6 @@ class CodeParser {
 
                 blockSet.bodyBlocks = this.parseBlockStatement(item.body);
                 blockSet.topBlock = new Block();
-                if (methodName === 'whenGreenFlag') {
-                    blockSet.topBlock.opcode = 'event_whenflagclicked';
-                    blockSet.topBlock.isTop = true;
-                }
-                else if (blockSet.bodyBlocks.length) {
-                    blockSet.bodyBlocks[0].isTop = true;
-                }
                 let last = blockSet.topBlock;
                 for (const block of blockSet.bodyBlocks) {
                     last.next = block;
@@ -99,6 +93,12 @@ class CodeParser {
                     for (const decorator of item.decorators) {
                         this.parseMethodDecorator(blockSet, decorator);
                     }
+                }
+
+                if (!blockSet.topBlock.isTop && blockSet.bodyBlocks.length) {
+                    blockSet.bodyBlocks[0].isTop = true;
+                    blockSet.bodyBlocks[0].x = blockSet.topBlock.x;
+                    blockSet.bodyBlocks[0].y = blockSet.topBlock.y;
                 }
 
                 this.script.blockSets.push(blockSet);
@@ -157,12 +157,6 @@ class CodeParser {
     public parseMethodDecorator(blockSet: BlockSet, node: type.Decorator): void {
         const expression = node.expression;
         let topBlock = blockSet.topBlock;
-        if (!topBlock.isTop && blockSet.bodyBlocks.length) {
-            topBlock = blockSet.bodyBlocks[0];
-        }
-        else {
-            return;
-        }
 
         if (expression.type === 'CallExpression' && expression.callee.type === 'Identifier') {
             if (expression.callee.name === 'position') {
@@ -170,6 +164,35 @@ class CodeParser {
                 topBlock.x = this.parseLiteral(<type.Literal>expression.arguments[0], 'NumericLiteral');
                 // arg[1]: y
                 topBlock.y = this.parseLiteral(<type.Literal>expression.arguments[1], 'NumericLiteral');
+            }
+            else if (expression.callee.name === 'event') {
+                // arg[0]: event name
+                const event = this.parseLiteral(<type.Literal>expression.arguments[0], 'StringLiteral');
+                if (event === 'whenGreenFlag') {
+                    topBlock.opcode = 'event_whenflagclicked';
+                    topBlock.isTop = true;
+                }
+                else {
+                    throw 'Unknown Event';
+                }
+            }
+            else if (expression.callee.name === 'broadcast') {
+                // arg[0]: broadcast name
+                const name = this.parseLiteral(<type.Literal>expression.arguments[0], 'StringLiteral');
+                if (!this.script.broadcastNames.has(name)) {
+                    const broadcast = new Broadcast();
+                    broadcast.id = generateBlockID();
+                    broadcast.name = name;
+                    this.script.broadcasts.push(broadcast);
+                    this.script.broadcastNames.add(name);
+                }
+                
+                topBlock.opcode = 'event_whenbroadcastreceived';
+                topBlock.isTop = true;
+                const field = new BlockField();
+                field.id = generateBlockID();
+                field.value = name;
+                topBlock.fields.set('BROADCAST_OPTION', field);
             }
             else {
                 throw 'Unknown Decorator';
@@ -279,12 +302,17 @@ class CodeParser {
         return blocks;
     }
 
-    public useCodeRule(type: CodeRuleType, key: string, node: type.Expression): Block {
+    public useCodeRule(type: CodeRuleType, key: string, node: type.Expression, isAwait?: boolean): Block {
         const rule = this.script.definition.getCodeRule(type, key);
-        return rule ? rule(node, this) : null;
+        return rule ? rule(node, this, isAwait) : null;
     }
 
     public parseExpressionStatement(node: type.ExpressionStatement): Block {
+        let isAwait = false;
+        if (node.expression.type === 'AwaitExpression') {
+            isAwait = true;
+            node.expression = node.expression.argument;
+        }
         if (node.expression.type === 'AssignmentExpression') {
             const operator = node.expression.operator;
             if (operator !== '=' && operator !== '+=') {
@@ -299,7 +327,7 @@ class CodeParser {
                     if (left.property.type === 'Identifier') {
                         const block = this.useCodeRule(
                             CodeRuleType.AssignmentProperty,
-                            left.property.name, node.expression
+                            left.property.name, node.expression, isAwait
                         );
                         if (!block) {
                             // check if this is variable
@@ -329,9 +357,26 @@ class CodeParser {
                 }
             }
         }
-        else {
-            throw 'Unknown Expression Statement Type';
+        else if (node.expression.type === 'CallExpression') {
+            const callee = node.expression.callee;
+            if (callee.type === 'MemberExpression') {
+                if (callee.object.type === 'ThisExpression') {
+                    // this.xxx();
+                    if (callee.property.type === 'Identifier') {
+                        const block = this.useCodeRule(
+                            CodeRuleType.CallProperty,
+                            callee.property.name, node.expression, isAwait
+                        );
+                        if (!block) {
+                            throw 'Unknown Method';
+                        }
+                        return block;
+                    }
+                }
+                throw 'Unsupported Property of Property';
+            }
         }
+        throw 'Unknown Expression Statement Type';
     }
 
     public parseExpressionOrLiteralToInput(

@@ -1,5 +1,6 @@
 import BlockPrototype, { BlockType, ParamType, ValueType } from "./block_prototype";
 import Script from "./script";
+import { parseStringToLiteral } from "./util";
 
 const blockPrototypes = new Map<string, BlockPrototype>([
     // Event
@@ -8,25 +9,54 @@ const blockPrototypes = new Map<string, BlockPrototype>([
         opcode: 'event_whenflagclicked',
         type: BlockType.HEAD,
         memberName: 'whenGreenFlag',
-        params: []
+        eventName: 'whenGreenFlag'
     }],
     ['event_whenthisspriteclicked', {
         opcode: 'event_whenthisspriteclicked',
         type: BlockType.HEAD,
         memberName: 'whenClicked',
-        params: []
+        eventName: 'whenClicked'
     }],
     ['event_whenstageclicked', {
         opcode: 'event_whenstageclicked',
         type: BlockType.HEAD,
         memberName: 'whenStageClicked',
-        params: []
+        eventName: 'whenStageClicked'
     }],
-    // event_whenbroadcastreceived
+    ['event_whenbroadcastreceived', {
+        opcode: 'event_whenbroadcastreceived',
+        type: BlockType.HEAD,
+        memberName: 'whenBroadcast',
+        eventName: 'broadcast',
+        params: [
+            { name: 'BROADCAST_OPTION', type: ParamType.FIELD, valueType: ValueType.FIELD }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return `@broadcast(${parseStringToLiteral(params.get('BROADCAST_OPTION'))})`;
+        }
+    }],
     // event_whenbackdropswitchesto
     // event_whengreaterthan
-    // event_broadcast
-    // event_broadcastandwait
+    ['event_broadcast', {
+        opcode: 'event_broadcast',
+        type: BlockType.BODY,
+        params: [
+            { name: 'BROADCAST_INPUT', type: ParamType.INPUT, valueType: ValueType.STRING }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return `this.broadcast(${parseStringToLiteral(params.get('BROADCAST_INPUT'))});`;
+        }
+    }],
+    ['event_broadcastandwait', {
+        opcode: 'event_broadcastandwait',
+        type: BlockType.BODY,
+        params: [
+            { name: 'BROADCAST_INPUT', type: ParamType.INPUT, valueType: ValueType.STRING }
+        ],
+        toCode: (params: Map<string, string>): string => {
+            return `await this.broadcast(${parseStringToLiteral(params.get('BROADCAST_INPUT'))});`;
+        }
+    }],
     // event_whenkeypressed
 
     // Control
@@ -170,7 +200,8 @@ const blockPrototypes = new Map<string, BlockPrototype>([
     ['control_start_as_clone', {
         opcode: 'control_start_as_clone',
         type: BlockType.HEAD,
-        params: []
+        memberName: 'whenClone',
+        eventName: 'whenClone'
     }],
     ['control_create_clone_of', {
         opcode: 'control_create_clone_of',

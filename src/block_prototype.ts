@@ -14,9 +14,10 @@ interface BlockParamPrototype {
 interface BlockPrototype {
     opcode: string;
     type: BlockType;
-    params: BlockParamPrototype[];
-    memberName?: string;
     toCode?: (params: Map<string, string>, script?: Script) => string;
+    params?: BlockParamPrototype[];
+    memberName?: string;
+    eventName?: string;
 }
 
 export default BlockPrototype;

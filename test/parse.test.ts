@@ -1,12 +1,9 @@
 import fs from 'fs';
-import Definition from '../src/definition';
-import Script from '../src/script';
+import Project from '../src/project';
 
 const xml: string = fs.readFileSync(`./test/xml/${process.argv[2]}.xml`, {encoding: 'utf-8'});
 
-const definition = new Definition();
-
-const script = new Script(definition);
+const script = (new Project()).getScript('stage');
 script.loadFromXML(xml);
 console.log(script.generateCode());
 

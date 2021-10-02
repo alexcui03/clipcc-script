@@ -1,5 +1,7 @@
 import Block from "./block";
+import { BlockType } from "./block_prototype";
 import Script from "./script";
+import { parseStringToLiteral } from "./util";
 
 class BlockSet {
     public topBlock: Block;
@@ -15,14 +17,25 @@ class BlockSet {
         else return null;
     }
 
-    public generateCodeWithName(name: string, script: Script): string {
+    public generateCode(script: Script): string {
         const code: string[] = [];
 
         const topBlock = this.getTopBlock();
         if (topBlock) {
             code.push(`@position(${topBlock.x}, ${topBlock.y})`);
+
+            // check if event
+            const def = script.definition.getBlock(topBlock.opcode);
+            if (def && def.type === BlockType.HEAD) {
+                if (def.toCode) {
+                    code.push(topBlock.generateCode(script));
+                } else {
+                    code.push(`@event(${parseStringToLiteral(def.eventName)})`);
+                }
+            }
         }
 
+        let name = script.generateMemberName(topBlock.opcode);
         code.push(`${name}() {`);
 
         for (const block of this.bodyBlocks) {

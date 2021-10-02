@@ -106,11 +106,22 @@ class Block {
         }
 
         for (const [name, field] of this.fields) {
-            xml.field.push({
-                '@_name': name,
-                '@_id': field.id,
-                '#text': field.value
-            });
+            // BROADCAST_OPTION have variable_type property
+            if (name === 'BROADCAST_OPTION') {
+                xml.field.push({
+                    '@_name': name,
+                    '@_id': field.id,
+                    '@_variabletype': 'broadcast_msg',
+                    '#text': field.value
+                });
+            }
+            else {
+                xml.field.push({
+                    '@_name': name,
+                    '@_id': field.id,
+                    '#text': field.value
+                });
+            }
         }
 
         for (const [name, input] of this.inputs) {

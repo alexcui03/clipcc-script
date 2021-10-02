@@ -48,6 +48,18 @@ const codeRules = new Map<CodeRuleType, CodeRuleMap>([
             block.opcode = 'motion_direction';
             return block;
         }]
+    ])],
+    [CodeRuleType.CallProperty, new Map<string, CodeRuleFunction<type.CallExpression>>([
+        ['broadcast', (node: type.CallExpression, parser: CodeParser, isAwait: boolean): Block => {
+            const block = new Block();
+            block.id = generateBlockID();
+            if (isAwait) block.opcode = 'event_broadcastandwait';
+            else block.opcode = 'event_broadcast';
+            block.inputs.set('BROADCAST_INPUT', parser.parseExpressionOrLiteralToInput(
+                <type.Expression>node.arguments[0], true, 'event_broadcast_menu', 'BROADCAST_OPTION'
+            ));
+            return block;
+        }]
     ])]
 ]);
 

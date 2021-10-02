@@ -6,12 +6,15 @@ import Definition from './definition';
 import { loadArray } from './util';
 import Variable from './variable';
 import NameGenerator from './name_generator';
+import Broadcast from './broadcast';
 
 class Script {
     public blockSets: BlockSet[] = [];
     public variables: Variable[] = [];
+    public broadcasts: Broadcast[] = [];
     private code: string[] = [];
     private memberName = new NameGenerator();
+    public broadcastNames = new Set<string>();
     public definition: Definition;
 
     constructor(definition: Definition) {
@@ -21,6 +24,8 @@ class Script {
     public clear(): void {
         this.blockSets = [];
         this.variables = [];
+        this.broadcasts = [];
+        this.broadcastNames.clear();
         this.clearCode();
     }
 
@@ -38,14 +43,23 @@ class Script {
 
         this.clear();
 
-        // load variables
+        // load variables & broadcasts
+        // PS: I don't know why LLK merged variables and broadcasts together,
+        //     and that's pretty awful.    -- Alex Cui
         if (xml.xml.variables && xml.xml.variables.variable) {
             const variables = loadArray(xml.xml.variables.variable);
             for (const varXML of variables) {
-                const variable = new Variable();
-                variable.loadFromXML(varXML);
-                variable.identifier = this.memberName.checkIdentifier(variable.name);
-                this.variables.push(variable);
+                if (varXML['@_type'] === 'broadcast_msg') {
+                    const broadcast = new Broadcast();
+                    broadcast.loadFromXML(varXML);
+                    this.broadcasts.push(broadcast);
+                }
+                else {
+                    const variable = new Variable();
+                    variable.loadFromXML(varXML);
+                    variable.identifier = this.memberName.checkIdentifier(variable.name);
+                    this.variables.push(variable);
+                }
             }
         }
 
@@ -83,7 +97,7 @@ class Script {
         }
     }
 
-    private generateMemberName(opcode: string): string {
+    public generateMemberName(opcode: string): string {
         let name = 'anonymousBlockSet';
 
         const def = this.definition.getBlock(opcode);
@@ -104,8 +118,7 @@ class Script {
         }
 
         for (const blockSet of this.blockSets) {
-            const memberName = this.generateMemberName(blockSet.topBlock.opcode);
-            this.code.push(blockSet.generateCodeWithName(memberName, this));
+            this.code.push(blockSet.generateCode(this));
         }
         
         this.code.push('}\n');
@@ -119,6 +132,7 @@ class Script {
             block: []
         };
 
+        // export variables
         if (this.variables.length) {
             xml.variables = {
                 variable: []
@@ -128,6 +142,19 @@ class Script {
             }
         }
 
+        // export broadcasts
+        if (this.broadcasts.length) {
+            if (!xml.variables) {
+                xml.variables = {
+                    variable: []
+                };
+            }
+            for (const broadcast of this.broadcasts) {
+                xml.variables.variable.push(broadcast.exportXML());
+            }
+        }
+
+        // export blocks
         for (const blockSet of this.blockSets) {
             xml.block.push(blockSet.exportXML());
         }

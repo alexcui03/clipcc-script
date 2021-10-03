@@ -1,5 +1,7 @@
 const path = require('path');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
 const PRODUCTION_MODE = process.env.NODE_ENV;
 
 module.exports = {
@@ -10,9 +12,7 @@ module.exports = {
         filename: 'clipcc-script.js',
         library: {
             type: 'commonjs2'
-        },
-        //libraryTarget: 'umd',
-        //libraryExport: 'default'
+        }
     },
     module: {
         rules: [{
@@ -23,6 +23,14 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js']
-    }
+    },
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [{
+                from: path.join(__dirname, 'src/lib/lib.d.ts'),
+                to: path.join(__dirname, 'dist/lib.d.ts')
+            }]
+        })
+    ]
 };
 　
